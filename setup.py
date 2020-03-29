@@ -16,7 +16,10 @@ setup(
 		]
 	},
 	install_requires=[
-		"awscli"
+		"awscli==1.18.31",
+		"pyinquirer==1.0.3",
+		"halo==0.0.29",
+		"termcolor==1.1.0"
 	],
 	zip_safe=False,
 	python_requires=">=3.7",
