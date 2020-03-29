@@ -8,7 +8,7 @@ from ..tools.awscli import AWSCliTool
 
 
 class IAction(object):
-	def start(self):
+	def start(self, **kwargs):
 		pass
 
 	def _askAWSProfile(self, default=None):

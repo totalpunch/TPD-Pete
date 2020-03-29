@@ -14,14 +14,6 @@ class Validator(object):
 		pass
 
 	@classmethod
-	def findPeteRoot(cls):
-		""" Search for a TPD Pete enabled folder
-
-			Returns path to root
-		"""
-		pass
-
-	@classmethod
 	def hasAWSCli(cls):
 		""" Check if AWS cli is available
 		"""
@@ -37,6 +29,18 @@ class Validator(object):
 		"""
 		# Check the path
 		path = ConfigurationTool.getGlobalPath()
+
+		# Check if the path exists
+		if os.path.exists(path) is False:
+			return False
+		return True
+
+	@classmethod
+	def hasPeteProjectSetup(cls):
+		""" Check if pete init has been run
+		"""
+		# Check the path
+		path = ConfigurationTool.getProjectPath()
 
 		# Check if the path exists
 		if os.path.exists(path) is False:

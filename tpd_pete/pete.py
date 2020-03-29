@@ -32,7 +32,7 @@ class Pete(object):
 		if args.mode == "configure":
 			return ActionManager.configure()
 
-		# Check if we configured Pete
+		# Check if we have a global configured Pete
 		if Validator.hasPeteSetup() is False:
 			raise Exception("Error: You need to setup Pete first! Use the configure mode, to setup Pete.")
 
@@ -40,6 +40,10 @@ class Pete(object):
 		if args.mode == "init":
 			return ActionManager.createProject()
 
+		# Check if we have a project configured Pete
+		if Validator.hasPeteProjectSetup() is False:
+			raise Exception("Error: You need to init the project first! Use the init mode, to create a project of Pete.")
+
 		# Check if we used the deploy mode
-		elif args.mode == "deploy":
+		if args.mode == "deploy":
 			return ActionManager.deploy(production=args.production)
