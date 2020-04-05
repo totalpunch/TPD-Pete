@@ -1,6 +1,6 @@
 from .actions.configure import ConfigureAction
 from .actions.create_project import CreateProjectAction
-
+from .actions.deployment import DeploymentAction
 
 class ActionManager(object):
 	@classmethod
@@ -19,4 +19,4 @@ class ActionManager(object):
 	def deploy(cls, production=False):
 		""" Deploy the current project
 		"""
-		pass
+		return DeploymentAction().start(production=production)

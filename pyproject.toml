@@ -10,6 +10,7 @@ awscli = "1.18.31"
 pyinquirer = "1.0.3"
 halo = "0.0.29"
 termcolor = "1.1.0"
+cfn_flip = "^1.2.2"
 
 [tool.poetry.dev-dependencies]
 

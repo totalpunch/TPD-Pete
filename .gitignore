@@ -1,3 +1,6 @@
 __pycache__
 .vscode
 .pete
+.deployment.template.yaml
+template.yaml
+.deployment.template.json

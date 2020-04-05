@@ -1,4 +1,5 @@
 import argparse
+import platform
 
 from .actionmanager import ActionManager
 from .validator import Validator
@@ -9,7 +10,9 @@ class Pete(object):
 	"""
 
 	def __init__(self):
-		pass
+		# Check if Linux
+		if platform.system() != "Linux":
+			raise Exception("This can only be used on Linux machines")
 
 	def start(self):
 		""" Start TPD Pete

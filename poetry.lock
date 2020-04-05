@@ -39,6 +39,27 @@ version = ">=1.20,<1.26"
 
 [[package]]
 category = "main"
+description = "Convert AWS CloudFormation templates between JSON and YAML formats"
+name = "cfn-flip"
+optional = false
+python-versions = "*"
+version = "1.2.2"
+
+[package.dependencies]
+Click = "*"
+PyYAML = ">=4.1"
+six = "*"
+
+[[package]]
+category = "main"
+description = "Composable command line interface toolkit"
+name = "click"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "7.1.1"
+
+[[package]]
+category = "main"
 description = "Cross-platform colored terminal text."
 name = "colorama"
 optional = false
@@ -154,7 +175,6 @@ six = ">=1.5"
 [[package]]
 category = "main"
 description = "YAML parser and emitter for Python"
-marker = "python_version != \"3.4\""
 name = "pyyaml"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
@@ -237,7 +257,7 @@ python-versions = "*"
 version = "0.1.9"
 
 [metadata]
-content-hash = "3a21c9d047bde87cc949e5645159e49d947ec43961384726501c4e5fe4c42d28"
+content-hash = "1dbf03c1114e3da1b84266b6c8405e6581a99e84fc7b605d927c7816cb0b31a1"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -248,6 +268,14 @@ awscli = [
 botocore = [
     {file = "botocore-1.15.31-py2.py3-none-any.whl", hash = "sha256:86e3f25c9a94e9e85915ef3dcb13b496d25873a40b81f4e23a7a0250248d1be9"},
     {file = "botocore-1.15.31.tar.gz", hash = "sha256:3d4684f61ff07aa1b4cd30d13a6b8e6416142be5a2a55aedcc1d7974b9415bb1"},
+]
+cfn-flip = [
+    {file = "cfn_flip-1.2.2-py3-none-any.whl", hash = "sha256:40fc5e279fd99ebebec164b2b9e6f7b76f22e0ae42b3b48e45f70010bd082619"},
+    {file = "cfn_flip-1.2.2.tar.gz", hash = "sha256:8ddd026cef53cd11a4a27e6dc239417a2bbf86587ba2e59fd6bf615ad8dec516"},
+]
+click = [
+    {file = "click-7.1.1-py2.py3-none-any.whl", hash = "sha256:e345d143d80bf5ee7534056164e5e112ea5e22716bbb1ce727941f4c8b471b9a"},
+    {file = "click-7.1.1.tar.gz", hash = "sha256:8a18b4ea89d8820c5d0c7da8a64b2c324b4dabb695804dbfea19b9be9d88c0cc"},
 ]
 colorama = [
     {file = "colorama-0.4.3-py2.py3-none-any.whl", hash = "sha256:7d73d2a99753107a36ac6b455ee49046802e59d9d076ef8e47b61499fa29afff"},

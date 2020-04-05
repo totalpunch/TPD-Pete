@@ -8,6 +8,7 @@ from .iaction import IAction
 from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey, ProjectConfigurationKey
 from ..tools.awscli import AWSCliTool
 from ..validator import Validator
+from ..template.template import CLOUDFORMATION_TEMPLATE
 
 
 class CreateProjectAction(IAction):
@@ -103,6 +104,10 @@ class CreateProjectAction(IAction):
 		# Save the config
 		ConfigurationTool.saveConfig(config, project=True)
 
+		# Check if there is on template.yaml
+		if os.path.exists("template.yaml") is False:
+			self._createCloudFormationTemplateFile()
+
 		# Everything is done
 		print("All done! You can now use pete deploy in this project. Want to change some details? Just run init again.", "yellow")
 
@@ -139,3 +144,11 @@ class CreateProjectAction(IAction):
 			sys.exit()
 
 		return answer['suffix']
+
+	def _createCloudFormationTemplateFile(self):
+		""" Create a template.yaml CloudFormation file
+		"""
+		# Write the content of CLOUDFORMATION_TEMPLATE to the file
+		f = open("template.yaml", "w")
+		f.write(CLOUDFORMATION_TEMPLATE)
+		f.close()
