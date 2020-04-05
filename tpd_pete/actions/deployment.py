@@ -154,10 +154,20 @@ class DeploymentAction(IAction):
 			Returns the zip filename
 		"""
 		# Create a filename
-		fileName = os.path.join(self.location, "pete_%s.zip" % int(time.time()))
+		fileName = "pete_%s.zip" % int(time.time())
 
-		# Zip it
-		subprocess.check_call("""zip -r %s %s -x ".git" -x ".svn" -x ".pete" -x ".vscode" -x "*.zip" -x "seeders/" -x ".*" """ % (fileName, self.location), shell=True)
+		# Build the command
+		command = "cd %s && " % self.location
+		command = command + "zip -r %s %s " % (fileName, ".")
+		command = command + """-x ".git" """
+		command = command + """-x ".svn" """
+		command = command + """-x ".pete" """
+		command = command + """-x ".vscode" """
+		command = command + """-x "*.zip" """
+		command = command + """-x "seeders/" """
+		command = command + """-x ".*" """
+
+		subprocess.check_call(command, shell=True)
 
 		return fileName
 
@@ -205,18 +215,48 @@ class DeploymentAction(IAction):
 
 		return bucketName.strip()
 
+	def _getDeploymentProfile(self):
+		""" Get the deployment AWS Profile
+
+			Returns name of profile
+		"""
+		# Check if we use the development environment
+		if self.environment == EnvironmentEnum.DEVELOPMENT:
+			# Check if the DEV_PROFILE is in the projectConfig
+			if ProjectConfigurationKey.DEV_PROFILE in self.projectConfig:
+				# Use the project override
+				profileName = self.projectConfig[ProjectConfigurationKey.DEV_PROFILE]
+			else:
+				# Use the global profile
+				profileName = self.globalConfig[GlobalConfigurationKey.DEV_PROFILE]
+
+		# This is the production environment
+		else:
+			# Check if the PROD_PROFILE is in the projectConfig
+			if ProjectConfigurationKey.PROD_PROFILE in self.projectConfig:
+				# Use the project override
+				profileName = self.projectConfig[ProjectConfigurationKey.PROD_PROFILE]
+			else:
+				# Use the global profile
+				profileName = self.globalConfig[GlobalConfigurationKey.PROD_PROFILE]
+
+		return profileName.strip()
+
 	def _cloudformationDeploy(self, parameters, s3Location):
 		""" Deploy to CloudFormation
 		"""
 		# Get the information
 		deploymentBucket = self._getDeploymentBucketName()
+		profileName = self._getDeploymentProfile()
 		stackName = self.projectConfig[ProjectConfigurationKey.STACK_NAME]
 
 		# Create the command
-		command = "aws cloudformation deploy "
-		command = command + "--s3-bucket %s" % (deploymentBucket)
-		command = command + "--template-file .deployment.template.json"
+		command = "cd %s && " % self.location
+		command = command + "aws cloudformation deploy "
+		command = command + "--s3-bucket %s " % (deploymentBucket)
+		command = command + "--template-file .deployment.template.json "
 		command = command + "--stack-name %s " % (stackName)
+		command = command + "--profile %s " % (profileName)
 		command = command + "--capabilities CAPABILITY_IAM "
 		command = command + """--parameter-overrides deploymentBucket="%s" """ % (deploymentBucket)
 		command = command + """--parameter-overrides s3FileName="%s" """ % (s3Location)
