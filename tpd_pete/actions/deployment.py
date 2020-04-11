@@ -150,11 +150,12 @@ class DeploymentAction(IAction):
 		# Check Python 'poetry.lock'
 		if os.path.exists("poetry.lock") is True:
 			subprocess.check_call("poetry install", shell=True)
+			os.environ["VIRTUAL_ENV"] = os.system("poetry env info -p")
 
 		# Check Python virtualenv
 		if os.getenv("VIRTUAL_ENV") is not None:
 			packagesPath = os.path.join(os.getenv("VIRTUAL_ENV"), "lib", "python%i.%i" % (sys.version_info[0], sys.version_info[1]), "site-packages")
-			subprocess.check_call("cp -R %s %s" % (packagesPath, self.location), shell=True)
+			subprocess.check_call("cp -R %s/. %s/" % (packagesPath, self.location), shell=True)
 
 	def _zipContent(self):
 		""" Zip the current directory
@@ -270,12 +271,13 @@ class DeploymentAction(IAction):
 		command = command + "--stack-name %s " % (stackName)
 		command = command + "--profile %s " % (profileName)
 		command = command + "--capabilities CAPABILITY_IAM "
-		command = command + """--parameter-overrides deploymentBucket="%s" """ % (deploymentBucket)
-		command = command + """--parameter-overrides s3FileName="%s" """ % (s3Location)
+		command = command + "--parameter-overrides "
+		command = command + """deploymentBucket="%s" """ % (deploymentBucket)
+		command = command + """s3FileName="%s" """ % (s3Location)
 
 		# Walk trought the parameters
 		for key, value in parameters.items():
-			command = command + """--parameter-overrides %s="%s" """ % (key, value)
+			command = command + """%s="%s" """ % (key, value)
 
 		print(command)
 
