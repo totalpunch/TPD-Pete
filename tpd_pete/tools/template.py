@@ -51,7 +51,7 @@ class TemplateTool(object):
 			if itemType in cls.DEV_SUFFIX_TYPES:
 				# Check if we change the name of the item
 				if cls.DEV_SUFFIX_TYPES[itemType] == DevSuffixEnum.ITEM_NAME:
-					newItemName = itemName + "_DEV"
+					newItemName = itemName + "Dev"
 					templateContent['Resources'][newItemName] = templateContent['Resources'][itemName]
 					del templateContent['Resources'][itemName]
 
