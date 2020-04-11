@@ -112,6 +112,9 @@ class TemplateTool(object):
 	def checkVariables(cls, templateContent):
 		""" Check if all the required variables are added
 		"""
+		# Remember all the parameters
+		parameters = {}
+
 		# Check if there are parameters
 		if "Parameters" not in templateContent:
 			templateContent['Parameters'] = {}
@@ -128,4 +131,18 @@ class TemplateTool(object):
 		if "projectName" not in templateContent['Parameters']:
 			templateContent['Parameters']['projectName'] = {"Type": "String"}
 
-		return templateContent
+		# Check for other parameters
+		for parameterName in templateContent['Parameters']:
+			# Check if this is an Pete parameter
+			if parameterName in ["s3FileName", "environment", "deploymentBucket", "stackName", "projectName"]:
+				continue
+
+			# Get the type of parameter
+			parameterType = "String"
+			if "Type" in templateContent['Parameters'][parameterName]:
+				parameterType = templateContent['Parameters'][parameterName]['Type']
+
+			# Save the parameter
+			parameters[parameterName] = parameterType
+
+		return (templateContent, parameters)

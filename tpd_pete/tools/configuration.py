@@ -18,6 +18,7 @@ class ProjectConfigurationKey(Enum):
 	PROD_BUCKET = "prod-bucket"
 	DEV_SUFFIX = "dev-suffix"
 	STACK_NAME = "stack-name"
+	PARAMETERS = "parameters"
 
 
 class ConfigurationTool(object):

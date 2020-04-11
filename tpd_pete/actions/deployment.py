@@ -8,6 +8,7 @@ import tempfile
 from enum import Enum, auto as autoEnum
 
 from halo import Halo
+from PyInquirer import prompt
 from termcolor import cprint as print
 
 from .iaction import IAction
@@ -18,8 +19,11 @@ from ..validator import Validator
 
 
 class EnvironmentEnum(Enum):
-	DEVELOPMENT = autoEnum()
-	PRODUCTION = autoEnum()
+	DEVELOPMENT = "development"
+	PRODUCTION = "production"
+
+	def __str__(self):
+		return self.value
 
 
 class DeploymentAction(IAction):
@@ -59,6 +63,9 @@ class DeploymentAction(IAction):
 		with Halo(text="Creating template") as spinner:
 			parameters = self._createTemporaryTemplate()
 			spinner.succeed()
+
+		# Check if there are other parameters
+		parameters = self._checkParameters(parameters)
 
 		# Check the dependencies
 		with Halo(text="Installing dependencies") as spinner:
@@ -115,18 +122,19 @@ class DeploymentAction(IAction):
 		template = TemplateTool.addTagsToItems(template)
 
 		# Check the parameters
-		template = TemplateTool.checkVariables(template)
+		template, parameters = TemplateTool.checkVariables(template)
 
 		# Save the template
 		f = open(os.path.join(self.location, ".deployment.template.json"), "w")
 		f.write(json.dumps(template))
 		f.close()
 
-		return {
-			"environment": self.environment,
-			"stackName": self.projectConfig[ProjectConfigurationKey.STACK_NAME] + ("_development" if self.projectConfig[ProjectConfigurationKey.DEV_SUFFIX] is True and self.environment == EnvironmentEnum.DEVELOPMENT else ""),
-			"projectName": self.projectConfig[ProjectConfigurationKey.STACK_NAME]
-		}
+		# Add the basic parameters
+		parameters['environment'] = self.environment
+		parameters['stackName'] = self.projectConfig[ProjectConfigurationKey.STACK_NAME] + ("_development" if self.projectConfig[ProjectConfigurationKey.DEV_SUFFIX] is True and self.environment == EnvironmentEnum.DEVELOPMENT else "")
+		parameters['projectName'] = self.projectConfig[ProjectConfigurationKey.STACK_NAME]
+
+		return parameters
 
 	def _checkDependencies(self):
 		""" Check which dependencies we should install
@@ -183,8 +191,12 @@ class DeploymentAction(IAction):
 		# Build the full bucket string
 		fullFileName = "s3://%s/%s" % (bucketName, fullFileName)
 
+		# Opbouwen van het commando
+		command = "cd %s && " % self.location
+		command = command + "aws s3 cp %s %s" % (zipName, fullFileName)
+
 		# Upload the file
-		subprocess.check_call("aws s3 cp %s %s" % (zipName, fullFileName), shell=True)
+		subprocess.check_call(command, shell=True)
 
 		return fullFileName
 
@@ -265,5 +277,68 @@ class DeploymentAction(IAction):
 		for key, value in parameters.items():
 			command = command + """--parameter-overrides %s="%s" """ % (key, value)
 
+		print(command)
+
 		# Run the command
 		subprocess.check_call(command, shell=True)
+
+	def _checkParameters(self, parameters):
+		""" Check if there are other parameters we need information about
+		"""
+		# Walk through the parameters
+		for parameterName in parameters:
+			# Check if there is an value
+			if parameters[parameterName] in ["String", "Number", "List", "CommaDelimitedList"]:
+				# Check if we have the parameter in de project config
+				if ProjectConfigurationKey.PARAMETERS in self.projectConfig:
+					if str(self.environment) in self.projectConfig[ProjectConfigurationKey.PARAMETERS]:
+						if parameterName in self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)]:
+							parameters[parameterName] = self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)][parameterName]
+							continue
+
+				# Ask for the value
+				parameterValue, save = self._askForParameterValue(parameterName)
+
+				# Save the value
+				parameters[parameterName] = parameterValue
+
+				# Check if we should save the value
+				if save is True:
+					# Check if parameters already exists
+					if ProjectConfigurationKey.PARAMETERS not in self.projectConfig:
+						self.projectConfig[ProjectConfigurationKey.PARAMETERS] = {}
+
+					# Check if the environment exists
+					if str(self.environment) not in self.projectConfig[ProjectConfigurationKey.PARAMETERS]:
+						self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)] = {}
+
+					# Save the value
+					self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)][parameterName] = parameterValue
+					ConfigurationTool.saveConfig(self.projectConfig, project=True)
+
+		return parameters
+
+	def _askForParameterValue(self, parameterName):
+		""" Ask for the value of an parameter
+
+			Parameters:
+				parameterName: Name of the parameter
+
+			Returns tuple (parameterValue, save)
+		"""
+		# Ask the questions
+		answer = prompt([{
+			"type": "input",
+			"name": "value",
+			"message": "What is the value of parameter %s?" % parameterName
+		}, {
+			"type": "confirm",
+			"message": "Do you want to save this value?",
+			"name": "save"
+		}])
+
+		# Check if there is an answer
+		if answer == {}:
+			sys.exit()
+
+		return (answer['value'], answer['save'])
