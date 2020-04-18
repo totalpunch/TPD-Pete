@@ -4,3 +4,6 @@ __pycache__
 .deployment.template.yaml
 template.yaml
 .deployment.template.json
+dist
+build
+tpd_pete.egg-info

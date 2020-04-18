@@ -12,4 +12,4 @@ To use pete for a project, first set it up using: `pete init`.
 This will generate the nessacary files for pete to function.
 
 Then simply use: `pete deploy` to let deploy to your deployment AWS profile.
-If you want to deploy to your production environment use: `pete deploy production`
+If you want to deploy to your production environment use: `pete deploy --production`
