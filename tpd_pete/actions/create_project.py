@@ -91,7 +91,7 @@ class CreateProjectAction(IAction):
 		if devBucketOverride is True:
 			config[ProjectConfigurationKey.DEV_BUCKET] = devBucket
 		if prodBucketOverride is True:
-			config[ProjectConfigurationKey.PROD_PROFILE] = prodBucket
+			config[ProjectConfigurationKey.PROD_BUCKET] = prodBucket
 		config[ProjectConfigurationKey.DEV_SUFFIX] = useDevSuffix
 		config[ProjectConfigurationKey.STACK_NAME] = stackName
 
