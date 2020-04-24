@@ -1,5 +1,6 @@
 # TPD Pete
 ![Upload Python Package](https://github.com/totalpunch/TPD-Pete/workflows/Upload%20Python%20Package/badge.svg)
+![Lint](https://github.com/totalpunch/TPD-Pete/workflows/Lint/badge.svg)
 
 TPD Pete is an AWS Deployment tool for AWS Cloudformation
 
