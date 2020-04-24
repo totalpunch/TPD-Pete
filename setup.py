@@ -5,7 +5,6 @@ setup(
 	name="tpd_pete",
 	version="0.1.1",
 	description="TPD Pete is a AWS Deployment tool for AWS Cloudformation",
-	url="https://dev.azure.com/totalpunch/TPD%20Pete",
 	author="TotalPunch Development",
 	author_email="info@totalpunch.nl",
 	url="https://github.com/totalpunch/TPD-Pete",
