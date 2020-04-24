@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 
 setup(
 	name="tpd_pete",
-	version="0.1.0",
+	version="0.1.1",
 	description="TPD Pete is a AWS Deployment tool for AWS Cloudformation",
 	url="https://dev.azure.com/totalpunch/TPD%20Pete",
 	author="TotalPunch Development",
 	author_email="info@totalpunch.nl",
 	url="https://github.com/totalpunch/TPD-Pete",
-	download_url="https://github.com/totalpunch/TPD-Pete/archive/010.tar.gz",
+	download_url="https://github.com/totalpunch/TPD-Pete/archive/0.1.1.tar.gz",
 	license="MIT",
 	packages=find_packages(),
 	entry_points={
