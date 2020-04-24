@@ -185,6 +185,7 @@ class DeploymentAction(IAction):
 		# Get the bucket name and profile
 		bucketName = self._getDeploymentBucketName()
 		profileName = self._getDeploymentProfile()
+		region = self._getDeploymentRegion()
 
 		# Build the full bucket string
 		bucketFullFileName = "s3://%s/%s" % (bucketName, fullFileName)
@@ -193,6 +194,8 @@ class DeploymentAction(IAction):
 		command = "cd %s && " % self.location
 		command = command + "aws s3 cp %s %s " % (zipName, bucketFullFileName)
 		command = command + "--profile %s " % (profileName)
+		if region is not None:
+			command = command + "--region %s " % (region)
 
 		# Upload the file
 		subprocess.check_call(command, shell=True)
@@ -253,12 +256,43 @@ class DeploymentAction(IAction):
 
 		return profileName.strip()
 
+	def _getDeploymentRegion(self):
+		""" Get the deployment AWS Region
+
+			Returns name of region
+		"""
+		# Default option for region
+		region = None
+
+		# Check if we use the development environment
+		if self.environment == EnvironmentEnum.DEVELOPMENT:
+			# Check if the DEV_REGION is in the projectConfig
+			if ProjectConfigurationKey.DEV_REGION in self.projectConfig:
+				# Use the project override
+				region = self.projectConfig[ProjectConfigurationKey.DEV_REGION]
+			elif GlobalConfigurationKey.DEV_REGION in self.globalConfig:
+				# Use the global profile
+				region = self.globalConfig[GlobalConfigurationKey.DEV_REGION]
+
+		# This is the production environment
+		else:
+			# Check if the PROD_REGION is in the projectConfig
+			if ProjectConfigurationKey.PROD_REGION in self.projectConfig:
+				# Use the project override
+				region = self.projectConfig[ProjectConfigurationKey.PROD_REGION]
+			elif GlobalConfigurationKey.PROD_REGION in self.globalConfig:
+				# Use the global profile
+				region = self.globalConfig[GlobalConfigurationKey.PROD_REGION]
+
+		return region
+
 	def _cloudformationDeploy(self, parameters, s3Location):
 		""" Deploy to CloudFormation
 		"""
 		# Get the information
 		deploymentBucket = self._getDeploymentBucketName()
 		profileName = self._getDeploymentProfile()
+		region = self._getDeploymentRegion()
 		stackName = self.projectConfig[ProjectConfigurationKey.STACK_NAME]
 
 		# Create the command
@@ -268,10 +302,12 @@ class DeploymentAction(IAction):
 		command = command + "--template-file .deployment.template.json "
 		command = command + "--stack-name %s " % (stackName)
 		command = command + "--profile %s " % (profileName)
+		if region is not None:
+			command = command + "--region %s " % (region)
 		command = command + "--capabilities CAPABILITY_IAM "
 		command = command + "--parameter-overrides "
-		command = command + """deploymentBucket="%s" """ % (deploymentBucket)
-		command = command + """s3FileName="%s" """ % (s3Location)
+		command = command + "deploymentBucket=\"%s\" " % (deploymentBucket)
+		command = command + "s3FileName=\"%s\" " % (s3Location)
 
 		# Walk trought the parameters
 		for key, value in parameters.items():
@@ -280,7 +316,7 @@ class DeploymentAction(IAction):
 		print(command)
 
 		# Run the command
-		subprocess.check_call(command, shell=True)
+		subprocess.call(command, shell=True)
 
 	def _checkParameters(self, parameters):
 		""" Check if there are other parameters we need information about

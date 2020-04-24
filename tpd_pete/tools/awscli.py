@@ -3,6 +3,48 @@ import subprocess
 
 class AWSCliTool(object):
 	@classmethod
+	def getRegion(cls, profile):
+		""" Get AWS region of a profile
+		"""
+		# Open the AWS configuration
+		command = "cat ~/.aws/config"
+
+		# Request the config from AWS Cli
+		result = subprocess.run(command, shell=True, capture_output=True)
+
+		# Check the response
+		if result.returncode != 0:
+			raise Exception("Could not successfully get the profiles from AWS Cli. Has you run `aws configure`?")
+
+		# Parse the output
+		lines = (result.stdout).decode()
+
+		# Remember the region and profile of the config
+		region = None
+		configProfile = None
+
+		# Walk throught the lines
+		for line in lines.split("\n"):
+			# Check line length
+			if len(line) == 0:
+				continue
+
+			# Check if the next lines belong to a profile
+			if line[0] == "[":
+				# Save the config profile
+				configProfile = line[1:-1]
+
+			# Check if this is the region
+			elif line[:6] == "region":
+				# Check the profile
+				if configProfile == "default" and region is None:
+					region = line[9:]
+				elif configProfile == profile:
+					region = line[9:]
+
+		return region
+
+	@classmethod
 	def getProfiles(cls):
 		""" Get all AWS profiles
 		"""
