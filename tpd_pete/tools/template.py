@@ -23,7 +23,8 @@ class TemplateTool(object):
 		"AWS::AppSync::Resolver",
 		"AWS::IAM::Role",
 		"AWS::Events::Rule",
-		"AWS::Lambda::Permission"
+		"AWS::Lambda::Permission",
+		"AWS::SSM:Parameter"
 	]
 
 	@classmethod
