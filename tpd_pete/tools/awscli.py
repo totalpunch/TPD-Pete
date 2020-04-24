@@ -19,7 +19,7 @@ class AWSCliTool(object):
 		# Parse the output
 		output = (result.stdout).decode()
 
-		return [line[1:-1] for line in output.split("\n")]
+		return [(line[1:-1]).strip() for line in output.split("\n")]
 
 	@classmethod
 	def getS3Buckets(cls, profile=None):
@@ -42,4 +42,4 @@ class AWSCliTool(object):
 		# Parse the output
 		output = (result.stdout).decode()
 
-		return [line[19:] for line in output.split("\n")]
+		return [(line[19:]).strip() for line in output.split("\n")]
