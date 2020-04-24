@@ -76,7 +76,7 @@ class CreateProjectAction(IAction):
 		prodBucketOverride = self._askOverride(default=prodBucketOverride)
 		if prodBucketOverride is True:
 			# Ask the name of the Deployment bucket
-			prodBucket = self._askS3Bucket(profile=prodBucket, default=prodBucket)
+			prodBucket = self._askS3Bucket(profile=prodProfile, default=prodBucket)
 
 		# Ask if we need to use a suffix
 		print("Last one. Do you want to use a suffix for the development stack?\nThis can help you distinguish the difference between the stacks if you use the same account for development and production", "yellow")
