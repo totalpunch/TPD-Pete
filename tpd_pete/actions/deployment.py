@@ -190,11 +190,11 @@ class DeploymentAction(IAction):
 		bucketName = self._getDeploymentBucketName()
 
 		# Build the full bucket string
-		fullFileName = "s3://%s/%s" % (bucketName, fullFileName)
+		bucketFullFileName = "s3://%s/%s" % (bucketName, fullFileName)
 
 		# Opbouwen van het commando
 		command = "cd %s && " % self.location
-		command = command + "aws s3 cp %s %s" % (zipName, fullFileName)
+		command = command + "aws s3 cp %s %s" % (zipName, bucketFullFileName)
 
 		# Upload the file
 		subprocess.check_call(command, shell=True)
