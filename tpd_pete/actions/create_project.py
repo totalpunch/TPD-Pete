@@ -1,7 +1,7 @@
 import os
 import sys
 
-from PyInquirer import prompt
+from PyInquirer import prompt, Separator
 from termcolor import cprint as print
 
 from .iaction import IAction
@@ -28,70 +28,149 @@ class CreateProjectAction(IAction):
 		except Exception:
 			projectConfig = {}
 
-		# Overview of all the variables
-		stackName = projectConfig[ProjectConfigurationKey.STACK_NAME] if ProjectConfigurationKey.STACK_NAME in projectConfig else None
-		devProfile = projectConfig[ProjectConfigurationKey.DEV_PROFILE] if ProjectConfigurationKey.DEV_PROFILE in projectConfig else globalConfig[GlobalConfigurationKey.DEV_PROFILE]
-		prodProfile = projectConfig[ProjectConfigurationKey.PROD_PROFILE] if ProjectConfigurationKey.PROD_PROFILE in projectConfig else globalConfig[GlobalConfigurationKey.PROD_PROFILE]
-		devBucket = projectConfig[ProjectConfigurationKey.DEV_BUCKET] if ProjectConfigurationKey.DEV_BUCKET in projectConfig else globalConfig[GlobalConfigurationKey.DEV_BUCKET]
-		prodBucket = projectConfig[ProjectConfigurationKey.PROD_BUCKET] if ProjectConfigurationKey.PROD_BUCKET in projectConfig else globalConfig[GlobalConfigurationKey.PROD_BUCKET]
-		devProfileOverride = True if ProjectConfigurationKey.DEV_PROFILE in projectConfig else False
-		devBucketOverride = True if ProjectConfigurationKey.DEV_BUCKET in projectConfig else False
-		prodProfileOverride = True if ProjectConfigurationKey.PROD_PROFILE in projectConfig else False
-		prodBucketOverride = True if ProjectConfigurationKey.PROD_BUCKET in projectConfig else False
-		useDevSuffix = projectConfig[ProjectConfigurationKey.DEV_SUFFIX] if ProjectConfigurationKey.DEV_SUFFIX in projectConfig else True
+		# Fill temporary config
+		self.config = {}
+		self.config[ProjectConfigurationKey.STACK_NAME] = projectConfig[ProjectConfigurationKey.STACK_NAME] if ProjectConfigurationKey.STACK_NAME in projectConfig else os.path.split(os.getcwd())[1]
+		self.config[ProjectConfigurationKey.DEV_SUFFIX] = projectConfig[ProjectConfigurationKey.DEV_SUFFIX] if ProjectConfigurationKey.DEV_SUFFIX in projectConfig else True
+		self.config[ProjectConfigurationKey.DEV_PROFILE] = projectConfig[ProjectConfigurationKey.DEV_PROFILE] if ProjectConfigurationKey.DEV_PROFILE in projectConfig else "*" + globalConfig[GlobalConfigurationKey.DEV_PROFILE]
+		self.config[ProjectConfigurationKey.PROD_PROFILE] = projectConfig[ProjectConfigurationKey.PROD_PROFILE] if ProjectConfigurationKey.PROD_PROFILE in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_PROFILE]
+		self.config[ProjectConfigurationKey.DEV_BUCKET] = projectConfig[ProjectConfigurationKey.DEV_BUCKET] if ProjectConfigurationKey.DEV_BUCKET in projectConfig else "*" + globalConfig[GlobalConfigurationKey.DEV_BUCKET]
+		self.config[ProjectConfigurationKey.PROD_BUCKET] = projectConfig[ProjectConfigurationKey.PROD_BUCKET] if ProjectConfigurationKey.PROD_BUCKET in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_BUCKET]
+		self.config[ProjectConfigurationKey.DEV_REGION] = projectConfig[ProjectConfigurationKey.DEV_REGION] if ProjectConfigurationKey.DEV_REGION in projectConfig else "*" + globalConfig[GlobalConfigurationKey.DEV_REGION] if GlobalConfigurationKey.DEV_REGION in globalConfig else ""
+		self.config[ProjectConfigurationKey.PROD_REGION] = projectConfig[ProjectConfigurationKey.PROD_REGION] if ProjectConfigurationKey.PROD_REGION in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_REGION] if GlobalConfigurationKey.PROD_REGION in globalConfig else ""
+		
 
-		# Ask the name of the AWS Stack
-		print("First: The name of the stack in Cloudformation. What would you like to name this project?", "yellow")
-		if stackName is not None:
-			currentWorkingFolderName = stackName
-		else:
-			currentWorkingFolderName = os.path.split(os.getcwd())[1]
-		stackName = self._askName(default=currentWorkingFolderName)
+		# Keep showing main config
+		while True:
+			answer = self._showMainConfig()
 
-		# Ask if we want to override the deployment credentials
-		print("Do you want override the global development [%s] profile?" % devProfile, "yellow")
-		devProfileOverride = self._askOverride(default=devProfileOverride)
-		if devProfileOverride is True:
-			# Ask which profile you want to use for deployment
-			devProfile = self._askAWSProfile(default=devProfile)
+			if answer == 1:
+				# Ask for name
+				self.config[ProjectConfigurationKey.STACK_NAME] = self._askName(default=self.config[ProjectConfigurationKey.STACK_NAME])
 
-		# Ask if we want to override the production credentials
-		print("Do you want to override the global production [%s] profile?" % prodProfile, "yellow")
-		prodProfileOverride = self._askOverride(default=prodProfileOverride)
-		if prodProfileOverride is True:
-			# Ask which profile you want to use for production
-			prodProfile = self._askAWSProfile(default=prodProfile)
+			elif answer == 2:
+				# Ask if we need to use a suffix
+				print("Do you want to use a suffix for the development stack?\nThis can help you distinguish the difference between the stacks if you use the same account for development and production", "yellow")
+				self.config[ProjectConfigurationKey.DEV_SUFFIX] = self._askSuffix(default=self.config[ProjectConfigurationKey.DEV_SUFFIX])
 
-		# Ask if we want to override the development bucket
-		print("Do you want to override the global s3 development [%s] bucket?" % devBucket, "yellow")
-		devBucketOverride = self._askOverride(default=devBucketOverride)
-		if devBucketOverride is True:
-			# Ask the name of the Deployment bucket
-			devBucket = self._askS3Bucket(profile=devProfile, default=devBucket)
+			elif answer == 4:				
+				# Ask if we want to override the deployment credentials
+				devProfileOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.DEV_PROFILE][0] != "*" else False)
+				if devProfileOverride is True:
+					# Ask which profile you want to use for deployment
+					self.config[ProjectConfigurationKey.DEV_PROFILE] = self._askAWSProfile(default=self.config[ProjectConfigurationKey.DEV_PROFILE])
+				else:
+					self.config[ProjectConfigurationKey.DEV_PROFILE] = "*" + globalConfig[GlobalConfigurationKey.DEV_PROFILE]
 
-		# Ask if we want to override the product bucket
-		print("Almost done. Do you want to override the global s3 production [%s] bucket?" % prodBucket, "yellow")
-		prodBucketOverride = self._askOverride(default=prodBucketOverride)
-		if prodBucketOverride is True:
-			# Ask the name of the Deployment bucket
-			prodBucket = self._askS3Bucket(profile=prodProfile, default=prodBucket)
+			elif answer == 5:
+				# Ask if we want to override the development bucket
+				devBucketOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.DEV_BUCKET][0] != "*" else False)
+				if devBucketOverride is True:
+					# Ask the name of the Deployment bucket
+					self.config[ProjectConfigurationKey.DEV_BUCKET] = self._askS3Bucket(
+						profile=self.config[ProjectConfigurationKey.DEV_PROFILE], 
+						default=self.config[ProjectConfigurationKey.DEV_BUCKET]
+					)
+				else:
+					self.config[ProjectConfigurationKey.DEV_BUCKET] = "*" + globalConfig[GlobalConfigurationKey.DEV_BUCKET]
 
-		# Ask if we need to use a suffix
-		print("Last one. Do you want to use a suffix for the development stack?\nThis can help you distinguish the difference between the stacks if you use the same account for development and production", "yellow")
-		useDevSuffix = self._askSuffix(default=useDevSuffix)
+			elif answer == 6:
+				# Ask if you want to override the region
+				self.config[ProjectConfigurationKey.DEV_REGION] = self._askAWSRegion(
+					profile=self.config[ProjectConfigurationKey.DEV_PROFILE],
+					default=self.config[ProjectConfigurationKey.DEV_REGION]
+				)
 
+			elif answer == 8:
+				# Ask if we want to override the production credentials
+				prodProfileOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*" else False)
+				if prodProfileOverride is True:
+					# Ask which profile you want to use for production
+					self.config[ProjectConfigurationKey.PROD_PROFILE] = self._askAWSProfile(default=self.config[ProjectConfigurationKey.PROD_PROFILE])
+				else:
+					self.config[ProjectConfigurationKey.PROD_PROFILE] = "*" + globalConfig[GlobalConfigurationKey.PROD_PROFILE]
+
+			elif answer == 9:
+				# Ask if we want to override the product bucket
+				prodBucketOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.PROD_BUCKET][0] != "*" else False)
+				if prodBucketOverride is True:
+					# Ask the name of the Deployment bucket
+					self.config[ProjectConfigurationKey.PROD_BUCKET] = self._askS3Bucket(
+						profile=self.config[ProjectConfigurationKey.PROD_PROFILE], 
+						default=self.config[ProjectConfigurationKey.PROD_BUCKET]
+					)
+				else:
+					self.config[ProjectConfigurationKey.PROD_BUCKET] = "*" + globalConfig[GlobalConfigurationKey.PROD_BUCKET]
+
+			elif answer == 10:
+				# Ask if you want to override the region
+				self.config[ProjectConfigurationKey.PROD_REGION] = self._askAWSRegion(
+					profile=self.config[ProjectConfigurationKey.PROD_PROFILE],
+					default=self.config[ProjectConfigurationKey.PROD_REGION]
+				)
+
+			elif answer == 11:
+				# Save the config
+				saved = self._saveConfig()
+				if saved is True:
+					sys.exit()
+
+	def _showMainConfig(self):
+		""" Show the main config options
+		"""
+		# Make the options for the list
+		choices = []
+		choices.append(Separator("~ Project ~"))
+		choices.append("  Name: %s" % self.config[ProjectConfigurationKey.STACK_NAME])
+		choices.append("  Use DEV suffix: %s" % self.config[ProjectConfigurationKey.DEV_SUFFIX])
+		choices.append(Separator("~ Development ~"))
+		choices.append("  AWS profile: %s" % self.config[ProjectConfigurationKey.DEV_PROFILE])
+		choices.append("  AWS bucket: %s" % self.config[ProjectConfigurationKey.DEV_BUCKET])
+		choices.append("  AWS region: %s" % self.config[ProjectConfigurationKey.DEV_REGION])
+		choices.append(Separator("~ Production ~"))
+		choices.append("  AWS profile: %s" % self.config[ProjectConfigurationKey.PROD_PROFILE])
+		choices.append("  AWS bucket: %s" % self.config[ProjectConfigurationKey.PROD_BUCKET])
+		choices.append("  AWS region: %s" % self.config[ProjectConfigurationKey.PROD_REGION])
+		choices.append("Done")
+
+		# Show the list
+		answer = prompt({
+			"type": "list",
+			"name": "option",
+			"message": "Choose an option to configure",
+			"choices": choices
+		})
+
+		# Check if answer is empty
+		if answer == {}:
+			sys.exit()
+
+		# Get the index of the option
+		index = choices.index(answer['option'])
+
+		return index
+
+	def _saveConfig(self):
+		""" Save the config
+		"""
 		# Create the config
 		config = {}
-		if devProfileOverride is True:
+		config[ProjectConfigurationKey.STACK_NAME] = self.config[ProjectConfigurationKey.STACK_NAME]
+		config[ProjectConfigurationKey.DEV_SUFFIX] = self.config[ProjectConfigurationKey.DEV_SUFFIX]
+		
+		# Check to see if we overridden anything
+		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
 			config[ProjectConfigurationKey.DEV_PROFILE] = devProfile
-		if prodProfileOverride is True:
+		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
 			config[ProjectConfigurationKey.PROD_PROFILE] = prodProfile
-		if devBucketOverride is True:
+		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
 			config[ProjectConfigurationKey.DEV_BUCKET] = devBucket
-		if prodBucketOverride is True:
+		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
 			config[ProjectConfigurationKey.PROD_BUCKET] = prodBucket
-		config[ProjectConfigurationKey.DEV_SUFFIX] = useDevSuffix
-		config[ProjectConfigurationKey.STACK_NAME] = stackName
+		if self.config[ProjectConfigurationKey.DEV_REGION] not in [None, "", "<empty>"]:
+			config[ProjectConfigurationKey.DEV_REGION] = devRegion
+		if self.config[ProjectConfigurationKey.DEV_REGION] not in [None, "", "<empty>"]:
+			config[ProjectConfigurationKey.PROD_REGION] = prodRegion
 
 		# Check if we have a path
 		try:
@@ -108,6 +187,7 @@ class CreateProjectAction(IAction):
 
 		# Everything is done
 		print("All done! You can now use pete deploy in this project. Want to change some details? Just run init again.", "yellow")
+		return True
 
 	def _askOverride(self, default=False):
 		""" Ask if you want to override
