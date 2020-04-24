@@ -36,11 +36,11 @@ class IAction(object):
 
 		return answer['profile']
 
-	def _askS3Bucket(self, default=None):
+	def _askS3Bucket(self, profile, default=None):
 		""" Ask for an S3 Bucket
 		"""
 		# Get all the profile from AWS Cli
-		buckets = AWSCliTool.getS3Buckets()
+		buckets = AWSCliTool.getS3Buckets(profile=profile)
 
 		# Check if there are buckets
 		if len(buckets) == 0:

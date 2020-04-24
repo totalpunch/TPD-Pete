@@ -35,11 +35,17 @@ class ConfigureAction(IAction):
 
 		# Ask for the deployment S3 bucket
 		print("Now where do you want the Development code to be uploaded?", "yellow")
-		devBucket = self._askS3Bucket(default=data[GlobalConfigurationKey.DEV_BUCKET] if GlobalConfigurationKey.DEV_BUCKET in data else None)
+		devBucket = self._askS3Bucket(
+			profile=devProfile,
+			default=data[GlobalConfigurationKey.DEV_BUCKET] if GlobalConfigurationKey.DEV_BUCKET in data else None
+		)
 
 		# Ask for the production S3 bucket
 		print("Up next: Where do you want the Production code to be uploaded?", "yellow")
-		prodBucket = self._askS3Bucket(default=data[GlobalConfigurationKey.PROD_BUCKET] if GlobalConfigurationKey.PROD_BUCKET in data else None)
+		prodBucket = self._askS3Bucket(
+			profile=prodProfile,
+			default=data[GlobalConfigurationKey.PROD_BUCKET] if GlobalConfigurationKey.PROD_BUCKET in data else None
+		)
 
 		# Combine the data
 		data[GlobalConfigurationKey.DEV_PROFILE] = devProfile
