@@ -9,7 +9,8 @@ class GlobalConfigurationKey(Enum):
 	PROD_PROFILE = "prod-profile"
 	DEV_BUCKET = "dev-bucket"
 	PROD_BUCKET = "prod-bucket"
-
+	DEV_REGION = "dev-region"
+	PROD_REGION = "prod-region"
 
 class ProjectConfigurationKey(Enum):
 	DEV_PROFILE = "dev-profile"
@@ -19,6 +20,8 @@ class ProjectConfigurationKey(Enum):
 	DEV_SUFFIX = "dev-suffix"
 	STACK_NAME = "stack-name"
 	PARAMETERS = "parameters"
+	DEV_REGION = "dev-region"
+	PROD_REGION = "prod-region"
 
 
 class ConfigurationTool(object):
