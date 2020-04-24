@@ -18,11 +18,14 @@ class TemplateTool(object):
 	}
 
 	NO_TYPE_TAGS_SUPPORT = [
-		"AWS::AppSync::GraphQLSchema",
+		"AWS::ApiGateway::Deployment",
+		"AWS::ApiGateway::Method",
+		"AWS::ApiGateway::Resource",
 		"AWS::AppSync::DataSource",
+		"AWS::AppSync::GraphQLSchema",
 		"AWS::AppSync::Resolver",
-		"AWS::IAM::Role",
 		"AWS::Events::Rule",
+		"AWS::IAM::Role",
 		"AWS::Lambda::Permission",
 		"AWS::SSM:Parameter"
 	]
