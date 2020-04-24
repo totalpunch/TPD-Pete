@@ -6,8 +6,6 @@ from termcolor import cprint as print
 
 from .iaction import IAction
 from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey, ProjectConfigurationKey
-from ..tools.awscli import AWSCliTool
-from ..validator import Validator
 from ..template.template import CLOUDFORMATION_TEMPLATE
 
 

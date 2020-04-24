@@ -1,11 +1,7 @@
-import sys
-
-from PyInquirer import prompt
 from termcolor import cprint as print
 
 from .iaction import IAction
 from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey
-from ..tools.awscli import AWSCliTool
 from ..validator import Validator
 
 

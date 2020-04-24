@@ -3,7 +3,6 @@ import sys
 from PyInquirer import prompt
 from termcolor import cprint as print
 
-from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey
 from ..tools.awscli import AWSCliTool
 
 

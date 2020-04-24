@@ -72,7 +72,6 @@ class ConfigurationTool(object):
 		else:
 			path = cls.getProjectPath()
 
-
 		# Read the config
 		try:
 			f = open(path, "r")

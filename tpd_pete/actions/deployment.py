@@ -1,11 +1,10 @@
 import json
 import os
 import subprocess
-import shutil
 import sys
 import time
 import tempfile
-from enum import Enum, auto as autoEnum
+from enum import Enum
 
 from halo import Halo
 from PyInquirer import prompt
@@ -13,9 +12,7 @@ from termcolor import cprint as print
 
 from .iaction import IAction
 from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey, ProjectConfigurationKey
-from ..tools.awscli import AWSCliTool
 from ..tools.template import TemplateTool
-from ..validator import Validator
 
 
 class EnvironmentEnum(Enum):
@@ -86,7 +83,6 @@ class DeploymentAction(IAction):
 		with Halo(text="CloudFormation deploying") as spinner:
 			self._cloudformationDeploy(parameters, s3Location)
 			spinner.succeed()
-
 
 	def _createTempDir(self):
 		""" Create a temporary directory for deployment
@@ -184,7 +180,7 @@ class DeploymentAction(IAction):
 		""" Upload the zip file to S3
 		"""
 		# Create a full filename
-		fullFileName="%s/%s" % ((self.projectConfig[ProjectConfigurationKey.STACK_NAME].lower()), zipName)
+		fullFileName = "%s/%s" % ((self.projectConfig[ProjectConfigurationKey.STACK_NAME].lower()), zipName)
 
 		# Get the bucket name and profile
 		bucketName = self._getDeploymentBucketName()
