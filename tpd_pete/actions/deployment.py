@@ -186,15 +186,17 @@ class DeploymentAction(IAction):
 		# Create a full filename
 		fullFileName="%s/%s" % ((self.projectConfig[ProjectConfigurationKey.STACK_NAME].lower()), zipName)
 
-		# Get the bucket name
+		# Get the bucket name and profile
 		bucketName = self._getDeploymentBucketName()
+		profileName = self._getDeploymentProfile()
 
 		# Build the full bucket string
 		bucketFullFileName = "s3://%s/%s" % (bucketName, fullFileName)
 
 		# Opbouwen van het commando
 		command = "cd %s && " % self.location
-		command = command + "aws s3 cp %s %s" % (zipName, bucketFullFileName)
+		command = command + "aws s3 cp %s %s " % (zipName, bucketFullFileName)
+		command = command + "--profile %s " % (profileName)
 
 		# Upload the file
 		subprocess.check_call(command, shell=True)
