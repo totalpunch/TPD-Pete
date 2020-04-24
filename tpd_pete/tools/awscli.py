@@ -6,7 +6,7 @@ class AWSCliTool(object):
 	def getRegion(cls, profile):
 		""" Get AWS region of a profile
 		"""
-		# Open the AWS configuration 
+		# Open the AWS configuration
 		command = "cat ~/.aws/config"
 
 		# Request the config from AWS Cli
@@ -41,7 +41,7 @@ class AWSCliTool(object):
 					region = line[9:]
 				elif configProfile == profile:
 					region = line[9:]
-				
+
 		return region
 
 	@classmethod

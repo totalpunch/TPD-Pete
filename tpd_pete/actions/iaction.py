@@ -91,7 +91,7 @@ class IAction(object):
 			"name": "override",
 			"message": "Do you want to override the default region (%s)?" % defaultRegion,
 			"default": True if default is not None else False
-		})		
+		})
 
 		# Check if there is an answer
 		if answer == {}:

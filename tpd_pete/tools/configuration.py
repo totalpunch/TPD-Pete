@@ -12,6 +12,7 @@ class GlobalConfigurationKey(Enum):
 	DEV_REGION = "dev-region"
 	PROD_REGION = "prod-region"
 
+
 class ProjectConfigurationKey(Enum):
 	DEV_PROFILE = "dev-profile"
 	PROD_PROFILE = "prod-profile"

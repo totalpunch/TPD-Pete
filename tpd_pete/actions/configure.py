@@ -26,8 +26,8 @@ class ConfigureAction(IAction):
 
 		# Fill temporary config
 		self.config = {}
-		self.config[GlobalConfigurationKey.DEV_PROFILE] = data[GlobalConfigurationKey.DEV_PROFILE] if GlobalConfigurationKey.DEV_PROFILE in data else "<empty>"	
-		self.config[GlobalConfigurationKey.DEV_BUCKET] = data[GlobalConfigurationKey.DEV_BUCKET] if GlobalConfigurationKey.DEV_BUCKET in data else "<empty>"	
+		self.config[GlobalConfigurationKey.DEV_PROFILE] = data[GlobalConfigurationKey.DEV_PROFILE] if GlobalConfigurationKey.DEV_PROFILE in data else "<empty>"
+		self.config[GlobalConfigurationKey.DEV_BUCKET] = data[GlobalConfigurationKey.DEV_BUCKET] if GlobalConfigurationKey.DEV_BUCKET in data else "<empty>"
 		self.config[GlobalConfigurationKey.DEV_REGION] = data[GlobalConfigurationKey.DEV_REGION] if GlobalConfigurationKey.DEV_REGION in data else ""
 		self.config[GlobalConfigurationKey.PROD_PROFILE] = data[GlobalConfigurationKey.PROD_PROFILE] if GlobalConfigurationKey.PROD_PROFILE in data else "<empty>"
 		self.config[GlobalConfigurationKey.PROD_BUCKET] = data[GlobalConfigurationKey.PROD_BUCKET] if GlobalConfigurationKey.PROD_BUCKET in data else "<empty>"
@@ -118,8 +118,8 @@ class ConfigureAction(IAction):
 		for key, value in self.config.items():
 			# Cant save empty values
 			if value == "<empty>":
-				return False 
-		
+				return False
+
 		# Build a new config
 		data = {}
 

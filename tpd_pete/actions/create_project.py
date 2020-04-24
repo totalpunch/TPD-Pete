@@ -38,7 +38,6 @@ class CreateProjectAction(IAction):
 		self.config[ProjectConfigurationKey.PROD_BUCKET] = projectConfig[ProjectConfigurationKey.PROD_BUCKET] if ProjectConfigurationKey.PROD_BUCKET in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_BUCKET]
 		self.config[ProjectConfigurationKey.DEV_REGION] = projectConfig[ProjectConfigurationKey.DEV_REGION] if ProjectConfigurationKey.DEV_REGION in projectConfig else "*" + globalConfig[GlobalConfigurationKey.DEV_REGION] if GlobalConfigurationKey.DEV_REGION in globalConfig else ""
 		self.config[ProjectConfigurationKey.PROD_REGION] = projectConfig[ProjectConfigurationKey.PROD_REGION] if ProjectConfigurationKey.PROD_REGION in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_REGION] if GlobalConfigurationKey.PROD_REGION in globalConfig else ""
-		
 
 		# Keep showing main config
 		while True:
@@ -53,7 +52,7 @@ class CreateProjectAction(IAction):
 				print("Do you want to use a suffix for the development stack?\nThis can help you distinguish the difference between the stacks if you use the same account for development and production", "yellow")
 				self.config[ProjectConfigurationKey.DEV_SUFFIX] = self._askSuffix(default=self.config[ProjectConfigurationKey.DEV_SUFFIX])
 
-			elif answer == 4:				
+			elif answer == 4:
 				# Ask if we want to override the deployment credentials
 				devProfileOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.DEV_PROFILE][0] != "*" else False)
 				if devProfileOverride is True:
@@ -68,7 +67,7 @@ class CreateProjectAction(IAction):
 				if devBucketOverride is True:
 					# Ask the name of the Deployment bucket
 					self.config[ProjectConfigurationKey.DEV_BUCKET] = self._askS3Bucket(
-						profile=self.config[ProjectConfigurationKey.DEV_PROFILE], 
+						profile=self.config[ProjectConfigurationKey.DEV_PROFILE],
 						default=self.config[ProjectConfigurationKey.DEV_BUCKET]
 					)
 				else:
@@ -96,7 +95,7 @@ class CreateProjectAction(IAction):
 				if prodBucketOverride is True:
 					# Ask the name of the Deployment bucket
 					self.config[ProjectConfigurationKey.PROD_BUCKET] = self._askS3Bucket(
-						profile=self.config[ProjectConfigurationKey.PROD_PROFILE], 
+						profile=self.config[ProjectConfigurationKey.PROD_PROFILE],
 						default=self.config[ProjectConfigurationKey.PROD_BUCKET]
 					)
 				else:
@@ -157,20 +156,20 @@ class CreateProjectAction(IAction):
 		config = {}
 		config[ProjectConfigurationKey.STACK_NAME] = self.config[ProjectConfigurationKey.STACK_NAME]
 		config[ProjectConfigurationKey.DEV_SUFFIX] = self.config[ProjectConfigurationKey.DEV_SUFFIX]
-		
+
 		# Check to see if we overridden anything
+		if self.config[ProjectConfigurationKey.DEV_PROFILE][0] != "*":
+			config[ProjectConfigurationKey.DEV_PROFILE] = self.config[ProjectConfigurationKey.DEV_PROFILE]
 		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
-			config[ProjectConfigurationKey.DEV_PROFILE] = devProfile
-		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
-			config[ProjectConfigurationKey.PROD_PROFILE] = prodProfile
-		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
-			config[ProjectConfigurationKey.DEV_BUCKET] = devBucket
-		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
-			config[ProjectConfigurationKey.PROD_BUCKET] = prodBucket
+			config[ProjectConfigurationKey.PROD_PROFILE] = self.config[ProjectConfigurationKey.PROD_PROFILE]
+		if self.config[ProjectConfigurationKey.DEV_BUCKET][0] != "*":
+			config[ProjectConfigurationKey.DEV_BUCKET] = self.config[ProjectConfigurationKey.DEV_BUCKET]
+		if self.config[ProjectConfigurationKey.PROD_BUCKET][0] != "*":
+			config[ProjectConfigurationKey.PROD_BUCKET] = self.config[ProjectConfigurationKey.PROD_BUCKET]
 		if self.config[ProjectConfigurationKey.DEV_REGION] not in [None, "", "<empty>"]:
-			config[ProjectConfigurationKey.DEV_REGION] = devRegion
+			config[ProjectConfigurationKey.DEV_REGION] = self.config[ProjectConfigurationKey.DEV_REGION]
 		if self.config[ProjectConfigurationKey.DEV_REGION] not in [None, "", "<empty>"]:
-			config[ProjectConfigurationKey.PROD_REGION] = prodRegion
+			config[ProjectConfigurationKey.PROD_REGION] = self.config[ProjectConfigurationKey.PROD_REGION]
 
 		# Check if we have a path
 		try:
