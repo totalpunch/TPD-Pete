@@ -1,4 +1,5 @@
 # TPD Pete
+[![PyPI version fury.io](https://badge.fury.io/py/tpd-pete.svg)](https://pypi.python.org/pypi/tpd-pete/)
 ![Upload Python Package](https://github.com/totalpunch/TPD-Pete/workflows/Upload%20Python%20Package/badge.svg)
 ![Lint](https://github.com/totalpunch/TPD-Pete/workflows/Lint/badge.svg)
 
