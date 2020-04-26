@@ -5,7 +5,7 @@ from PyInquirer import prompt, Separator
 from termcolor import cprint as print
 
 from .iaction import IAction
-from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey, ProjectConfigurationKey
+from ..tools.configuration import ConfigurationTool, ConfigType, ConfigKey
 from ..template.template import CLOUDFORMATION_TEMPLATE
 
 
@@ -20,24 +20,26 @@ class CreateProjectAction(IAction):
 		print("Lets setup this project, I will now ask you some questions. Feel free to answer them.\n", "yellow")
 
 		# Get the global config
-		globalConfig = ConfigurationTool.readConfig()
-
-		# Get the project config
-		try:
-			projectConfig = ConfigurationTool.readConfig(project=True)
-		except Exception:
-			projectConfig = {}
+		ConfigurationTool.readConfig(getGlobal=True, getProject=True, getLocal=False)
 
 		# Fill temporary config
 		self.config = {}
-		self.config[ProjectConfigurationKey.STACK_NAME] = projectConfig[ProjectConfigurationKey.STACK_NAME] if ProjectConfigurationKey.STACK_NAME in projectConfig else os.path.split(os.getcwd())[1]
-		self.config[ProjectConfigurationKey.DEV_SUFFIX] = projectConfig[ProjectConfigurationKey.DEV_SUFFIX] if ProjectConfigurationKey.DEV_SUFFIX in projectConfig else True
-		self.config[ProjectConfigurationKey.DEV_PROFILE] = projectConfig[ProjectConfigurationKey.DEV_PROFILE] if ProjectConfigurationKey.DEV_PROFILE in projectConfig else "*" + globalConfig[GlobalConfigurationKey.DEV_PROFILE]
-		self.config[ProjectConfigurationKey.PROD_PROFILE] = projectConfig[ProjectConfigurationKey.PROD_PROFILE] if ProjectConfigurationKey.PROD_PROFILE in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_PROFILE]
-		self.config[ProjectConfigurationKey.DEV_BUCKET] = projectConfig[ProjectConfigurationKey.DEV_BUCKET] if ProjectConfigurationKey.DEV_BUCKET in projectConfig else "*" + globalConfig[GlobalConfigurationKey.DEV_BUCKET]
-		self.config[ProjectConfigurationKey.PROD_BUCKET] = projectConfig[ProjectConfigurationKey.PROD_BUCKET] if ProjectConfigurationKey.PROD_BUCKET in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_BUCKET]
-		self.config[ProjectConfigurationKey.DEV_REGION] = projectConfig[ProjectConfigurationKey.DEV_REGION] if ProjectConfigurationKey.DEV_REGION in projectConfig else "*" + globalConfig[GlobalConfigurationKey.DEV_REGION] if GlobalConfigurationKey.DEV_REGION in globalConfig else ""
-		self.config[ProjectConfigurationKey.PROD_REGION] = projectConfig[ProjectConfigurationKey.PROD_REGION] if ProjectConfigurationKey.PROD_REGION in projectConfig else "*" + globalConfig[GlobalConfigurationKey.PROD_REGION] if GlobalConfigurationKey.PROD_REGION in globalConfig else ""
+		self.config[ConfigKey.STACK_NAME] = self._getConfigValue(ConfigKey.STACK_NAME)
+		self.config[ConfigKey.DEV_SUFFIX] = self._getConfigValue(ConfigKey.DEV_SUFFIX)
+		self.config[ConfigKey.DEV_PROFILE] = self._getConfigValue(ConfigKey.DEV_PROFILE)
+		self.config[ConfigKey.PROD_PROFILE] = self._getConfigValue(ConfigKey.PROD_PROFILE)
+		self.config[ConfigKey.DEV_BUCKET] = self._getConfigValue(ConfigKey.DEV_BUCKET)
+		self.config[ConfigKey.PROD_BUCKET] = self._getConfigValue(ConfigKey.PROD_BUCKET)
+		self.config[ConfigKey.DEV_REGION] = self._getConfigValue(ConfigKey.DEV_REGION)
+		self.config[ConfigKey.PROD_REGION] = self._getConfigValue(ConfigKey.PROD_REGION)
+
+		# Check STACK_NAME
+		if self.config[ConfigKey.STACK_NAME] is None:
+			self.config[ConfigKey.STACK_NAME] = os.path.split(os.getcwd())[1]
+
+		# Check DEV_SUFFIX
+		if self.config[ConfigKey.DEV_SUFFIX] is None:
+			self.config[ConfigKey.DEV_SUFFIX] = True
 
 		# Keep showing main config
 		while True:
@@ -45,67 +47,71 @@ class CreateProjectAction(IAction):
 
 			if answer == 1:
 				# Ask for name
-				self.config[ProjectConfigurationKey.STACK_NAME] = self._askName(default=self.config[ProjectConfigurationKey.STACK_NAME])
+				self.config[ConfigKey.STACK_NAME] = self._askName(default=self.config[ConfigKey.STACK_NAME])
 
 			elif answer == 2:
 				# Ask if we need to use a suffix
 				print("Do you want to use a suffix for the development stack?\nThis can help you distinguish the difference between the stacks if you use the same account for development and production", "yellow")
-				self.config[ProjectConfigurationKey.DEV_SUFFIX] = self._askSuffix(default=self.config[ProjectConfigurationKey.DEV_SUFFIX])
+				self.config[ConfigKey.DEV_SUFFIX] = self._askSuffix(default=self.config[ConfigKey.DEV_SUFFIX])
 
 			elif answer == 4:
 				# Ask if we want to override the deployment credentials
-				devProfileOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.DEV_PROFILE][0] != "*" else False)
+				devProfileOverride = self._askOverride(default=True if self.config[ConfigKey.DEV_PROFILE][0] != "*" else False)
 				if devProfileOverride is True:
 					# Ask which profile you want to use for deployment
-					self.config[ProjectConfigurationKey.DEV_PROFILE] = self._askAWSProfile(default=self.config[ProjectConfigurationKey.DEV_PROFILE])
+					self.config[ConfigKey.DEV_PROFILE] = self._askAWSProfile(default=self.config[ConfigKey.DEV_PROFILE])
 				else:
-					self.config[ProjectConfigurationKey.DEV_PROFILE] = "*" + globalConfig[GlobalConfigurationKey.DEV_PROFILE]
+					# Return to global value
+					self.config[ConfigKey.DEV_PROFILE] = self._getConfigValue(ConfigKey.DEV_PROFILE, getGlobal=True)
 
 			elif answer == 5:
 				# Ask if we want to override the development bucket
-				devBucketOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.DEV_BUCKET][0] != "*" else False)
+				devBucketOverride = self._askOverride(default=True if self.config[ConfigKey.DEV_BUCKET][0] != "*" else False)
 				if devBucketOverride is True:
 					# Ask the name of the Deployment bucket
-					self.config[ProjectConfigurationKey.DEV_BUCKET] = self._askS3Bucket(
-						profile=self.config[ProjectConfigurationKey.DEV_PROFILE],
-						default=self.config[ProjectConfigurationKey.DEV_BUCKET]
+					self.config[ConfigKey.DEV_BUCKET] = self._askS3Bucket(
+						profile=self.config[ConfigKey.DEV_PROFILE],
+						default=self.config[ConfigKey.DEV_BUCKET]
 					)
 				else:
-					self.config[ProjectConfigurationKey.DEV_BUCKET] = "*" + globalConfig[GlobalConfigurationKey.DEV_BUCKET]
+					# Return to global value
+					self.config[ConfigKey.DEV_BUCKET] = self._getConfigValue(ConfigKey.DEV_BUCKET, getGlobal=True)
 
 			elif answer == 6:
 				# Ask if you want to override the region
-				self.config[ProjectConfigurationKey.DEV_REGION] = self._askAWSRegion(
-					profile=self.config[ProjectConfigurationKey.DEV_PROFILE],
-					default=self.config[ProjectConfigurationKey.DEV_REGION]
+				self.config[ConfigKey.DEV_REGION] = self._askAWSRegion(
+					profile=self.config[ConfigKey.DEV_PROFILE],
+					default=self.config[ConfigKey.DEV_REGION]
 				)
 
 			elif answer == 8:
 				# Ask if we want to override the production credentials
-				prodProfileOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*" else False)
+				prodProfileOverride = self._askOverride(default=True if self.config[ConfigKey.PROD_PROFILE][0] != "*" else False)
 				if prodProfileOverride is True:
 					# Ask which profile you want to use for production
-					self.config[ProjectConfigurationKey.PROD_PROFILE] = self._askAWSProfile(default=self.config[ProjectConfigurationKey.PROD_PROFILE])
+					self.config[ConfigKey.PROD_PROFILE] = self._askAWSProfile(default=self.config[ConfigKey.PROD_PROFILE])
 				else:
-					self.config[ProjectConfigurationKey.PROD_PROFILE] = "*" + globalConfig[GlobalConfigurationKey.PROD_PROFILE]
+					# Return to global value
+					self.config[ConfigKey.PROD_PROFILE] = self._getConfigValue(ConfigKey.PROD_PROFILE, getGlobal=True)
 
 			elif answer == 9:
 				# Ask if we want to override the product bucket
-				prodBucketOverride = self._askOverride(default=True if self.config[ProjectConfigurationKey.PROD_BUCKET][0] != "*" else False)
+				prodBucketOverride = self._askOverride(default=True if self.config[ConfigKey.PROD_BUCKET][0] != "*" else False)
 				if prodBucketOverride is True:
 					# Ask the name of the Deployment bucket
-					self.config[ProjectConfigurationKey.PROD_BUCKET] = self._askS3Bucket(
-						profile=self.config[ProjectConfigurationKey.PROD_PROFILE],
-						default=self.config[ProjectConfigurationKey.PROD_BUCKET]
+					self.config[ConfigKey.PROD_BUCKET] = self._askS3Bucket(
+						profile=self.config[ConfigKey.PROD_PROFILE],
+						default=self.config[ConfigKey.PROD_BUCKET]
 					)
 				else:
-					self.config[ProjectConfigurationKey.PROD_BUCKET] = "*" + globalConfig[GlobalConfigurationKey.PROD_BUCKET]
+					# Return to global value
+					self.config[ConfigKey.PROD_BUCKET] = self._getConfigValue(ConfigKey.PROD_BUCKET, getGlobal=True)
 
 			elif answer == 10:
 				# Ask if you want to override the region
-				self.config[ProjectConfigurationKey.PROD_REGION] = self._askAWSRegion(
-					profile=self.config[ProjectConfigurationKey.PROD_PROFILE],
-					default=self.config[ProjectConfigurationKey.PROD_REGION]
+				self.config[ConfigKey.PROD_REGION] = self._askAWSRegion(
+					profile=self.config[ConfigKey.PROD_PROFILE],
+					default=self.config[ConfigKey.PROD_REGION]
 				)
 
 			elif answer == 11:
@@ -120,16 +126,16 @@ class CreateProjectAction(IAction):
 		# Make the options for the list
 		choices = []
 		choices.append(Separator("~ Project ~"))
-		choices.append("  Name: %s" % self.config[ProjectConfigurationKey.STACK_NAME])
-		choices.append("  Use DEV suffix: %s" % self.config[ProjectConfigurationKey.DEV_SUFFIX])
+		choices.append("  Name: %s" % self.config[ConfigKey.STACK_NAME])
+		choices.append("  Use DEV suffix: %s" % self.config[ConfigKey.DEV_SUFFIX])
 		choices.append(Separator("~ Development ~"))
-		choices.append("  AWS profile: %s" % self.config[ProjectConfigurationKey.DEV_PROFILE])
-		choices.append("  AWS bucket: %s" % self.config[ProjectConfigurationKey.DEV_BUCKET])
-		choices.append("  AWS region: %s" % self.config[ProjectConfigurationKey.DEV_REGION])
+		choices.append("  AWS profile: %s" % self.config[ConfigKey.DEV_PROFILE])
+		choices.append("  AWS bucket: %s" % self.config[ConfigKey.DEV_BUCKET])
+		choices.append("  AWS region: %s" % self.config[ConfigKey.DEV_REGION])
 		choices.append(Separator("~ Production ~"))
-		choices.append("  AWS profile: %s" % self.config[ProjectConfigurationKey.PROD_PROFILE])
-		choices.append("  AWS bucket: %s" % self.config[ProjectConfigurationKey.PROD_BUCKET])
-		choices.append("  AWS region: %s" % self.config[ProjectConfigurationKey.PROD_REGION])
+		choices.append("  AWS profile: %s" % self.config[ConfigKey.PROD_PROFILE])
+		choices.append("  AWS bucket: %s" % self.config[ConfigKey.PROD_BUCKET])
+		choices.append("  AWS region: %s" % self.config[ConfigKey.PROD_REGION])
 		choices.append("Done")
 
 		# Show the list
@@ -149,36 +155,72 @@ class CreateProjectAction(IAction):
 
 		return index
 
+	def _getConfigValue(self, key, getGlobal=False):
+		""" Get the config value
+		"""
+		# Get the value from the config
+		value = ConfigurationTool.getConfigRow(key)
+
+		# Check if there is an value
+		if value is None:
+			return None
+
+		# Check if the project value exists
+		if ConfigType.PROJECT in value and getGlobal is False:
+			return value[ConfigType.PROJECT]
+
+		# Check if global value exists
+		elif ConfigType.GLOBAL in value:
+			return "*" + value[ConfigType.GLOBAL]
+
+		return None
+
 	def _saveConfig(self):
 		""" Save the config
 		"""
 		# Create the config
 		config = {}
-		config[ProjectConfigurationKey.STACK_NAME] = self.config[ProjectConfigurationKey.STACK_NAME]
-		config[ProjectConfigurationKey.DEV_SUFFIX] = self.config[ProjectConfigurationKey.DEV_SUFFIX]
+		config[ConfigKey.STACK_NAME] = self.config[ConfigKey.STACK_NAME]
+		config[ConfigKey.DEV_SUFFIX] = self.config[ConfigKey.DEV_SUFFIX]
 
 		# Check to see if we overridden anything
-		if self.config[ProjectConfigurationKey.DEV_PROFILE][0] != "*":
-			config[ProjectConfigurationKey.DEV_PROFILE] = self.config[ProjectConfigurationKey.DEV_PROFILE]
-		if self.config[ProjectConfigurationKey.PROD_PROFILE][0] != "*":
-			config[ProjectConfigurationKey.PROD_PROFILE] = self.config[ProjectConfigurationKey.PROD_PROFILE]
-		if self.config[ProjectConfigurationKey.DEV_BUCKET][0] != "*":
-			config[ProjectConfigurationKey.DEV_BUCKET] = self.config[ProjectConfigurationKey.DEV_BUCKET]
-		if self.config[ProjectConfigurationKey.PROD_BUCKET][0] != "*":
-			config[ProjectConfigurationKey.PROD_BUCKET] = self.config[ProjectConfigurationKey.PROD_BUCKET]
-		if self.config[ProjectConfigurationKey.DEV_REGION] not in [None, "", "<empty>"]:
-			config[ProjectConfigurationKey.DEV_REGION] = self.config[ProjectConfigurationKey.DEV_REGION]
-		if self.config[ProjectConfigurationKey.DEV_REGION] not in [None, "", "<empty>"]:
-			config[ProjectConfigurationKey.PROD_REGION] = self.config[ProjectConfigurationKey.PROD_REGION]
+		if self.config[ConfigKey.DEV_PROFILE][0] != "*":
+			config[ConfigKey.DEV_PROFILE] = self.config[ConfigKey.DEV_PROFILE]
+		else:
+			config[ConfigKey.DEV_PROFILE] = None
+		if self.config[ConfigKey.PROD_PROFILE][0] != "*":
+			config[ConfigKey.PROD_PROFILE] = self.config[ConfigKey.PROD_PROFILE]
+		else:
+			config[ConfigKey.PROD_PROFILE] = None
+		if self.config[ConfigKey.DEV_BUCKET][0] != "*":
+			config[ConfigKey.DEV_BUCKET] = self.config[ConfigKey.DEV_BUCKET]
+		else:
+			config[ConfigKey.DEV_BUCKET] = None
+		if self.config[ConfigKey.PROD_BUCKET][0] != "*":
+			config[ConfigKey.PROD_BUCKET] = self.config[ConfigKey.PROD_BUCKET]
+		else:
+			config[ConfigKey.PROD_BUCKET] = None
+		if self.config[ConfigKey.DEV_REGION] not in [None, "", "<empty>"]:
+			config[ConfigKey.DEV_REGION] = self.config[ConfigKey.DEV_REGION]
+		else:
+			config[ConfigKey.DEV_REGION] = None
+		if self.config[ConfigKey.DEV_REGION] not in [None, "", "<empty>"]:
+			config[ConfigKey.PROD_REGION] = self.config[ConfigKey.PROD_REGION]
+		else:
+			config[ConfigKey.PROD_REGION] = None
 
 		# Check if we have a path
 		try:
-			ConfigurationTool.getProjectPath()
+			ConfigurationTool._getProjectPath()
 		except Exception:
 			os.makedirs(".pete")
 
+		# Set the value
+		for key in config:
+			ConfigurationTool.setConfig(key, config[key], ConfigType.PROJECT)
+
 		# Save the config
-		ConfigurationTool.saveConfig(config, project=True)
+		ConfigurationTool.saveConfig(ConfigType.PROJECT)
 
 		# Check if there is on template.yaml
 		if os.path.exists("template.yaml") is False:

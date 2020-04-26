@@ -31,7 +31,17 @@ class ConfigurationTool(object):
 		""" Read the config
 		"""
 		# Get the configs
-		configs = cls._getConfigPaths(getGlobal=getGlobal, getProject=getProject, getLocal=getLocal)
+		configTypes = []
+		if getGlobal is True:
+			configTypes.append(ConfigType.GLOBAL)
+		if getProject is True:
+			configTypes.append(ConfigType.PROJECT)
+		if getLocal is True:
+			configTypes.append(ConfigType.LOCAL)
+		configs = cls._getConfigPaths(configTypes)
+
+		# Empty the config
+		cls.config = {}
 
 		# Walk through the paths
 		for config in configs:
@@ -47,23 +57,22 @@ class ConfigurationTool(object):
 			except Exception:
 				raise Exception("Could not read config at '%s'. Delete the file or fix it!" % path)
 
-		# Transform the data
-		try:
-			cls.config = {}
-			for key in data.keys():
-				keyName = ConfigKey(key)
-				if keyName not in cls.config:
-					cls.config[keyName] = {}
-				cls.config[keyName][configType] = data[key]
-		except Exception:
-			raise Exception("Could not read config at '%s'. Delete the file or fix it!" % path)
+			# Transform the data
+			try:
+				for key in data.keys():
+					keyName = ConfigKey(key)
+					if keyName not in cls.config:
+						cls.config[keyName] = {}
+					cls.config[keyName][configType] = data[key]
+			except Exception:
+				raise Exception("Could not read config at '%s'. Delete the file or fix it!" % path)
 
 	@classmethod
-	def saveConfig(cls, getGlobal=True, getProject=True, getLocal=True):
+	def saveConfig(cls, configType):
 		""" Write the config to a file
 		"""
 		# Get the configs
-		configs = cls._getConfigPaths(getGlobal=getGlobal, getProject=getProject, getLocal=getLocal)
+		configs = cls._getConfigPaths([configType])
 
 		# Walk through the paths
 		for config in configs:
@@ -90,7 +99,7 @@ class ConfigurationTool(object):
 			f.close()
 
 	@classmethod
-	def getAllConfig(cls, getGlobal=True, getProject=True, getLocal=True):
+	def getAllConfig(cls, getGlobal=True, getProject=True, getLocal=True, emptyValue=None):
 		""" Get all config
 		"""
 		# Create a temporary config storage
@@ -110,10 +119,15 @@ class ConfigurationTool(object):
 			if ConfigType.GLOBAL in cls.config[key] and getGlobal is True:
 				config[key] = cls.config[key][ConfigType.GLOBAL]
 
+		# Check if all keys exists
+		for key in ConfigKey:
+			if key not in config:
+				config[key] = emptyValue
+
 		return config
 
 	@classmethod
-	def getConfigWithType(cls, key, getGlobal=True, getProject=True, getLocal=True):
+	def getConfigWithType(cls, key, getGlobal=True, getProject=True, getLocal=True, emptyValue=None):
 		""" Get a specific config value with type
 
 			Returns a specific value
@@ -132,10 +146,10 @@ class ConfigurationTool(object):
 			if ConfigType.GLOBAL in cls.config[key] and getGlobal is True:
 				return {"value": cls.config[key][ConfigType.GLOBAL], "type": ConfigType.GLOBAL}
 
-		return None
+		return emptyValue
 
 	@classmethod
-	def getConfig(cls, key, getGlobal=True, getProject=True, getLocal=True):
+	def getConfig(cls, key, getGlobal=True, getProject=True, getLocal=True, emptyValue=None):
 		""" Get a specific config value
 
 			Returns a specific value
@@ -154,10 +168,10 @@ class ConfigurationTool(object):
 			if ConfigType.GLOBAL in cls.config[key] and getGlobal is True:
 				return cls.config[key][ConfigType.GLOBAL]
 
-		return None
+		return emptyValue
 
 	@classmethod
-	def getConfigRow(cls, key):
+	def getConfigRow(cls, key, emptyValue=None):
 		""" Get a specific config value row
 
 			Returns a specific value
@@ -166,7 +180,18 @@ class ConfigurationTool(object):
 		if key in cls.config:
 				return cls.config[key]
 
-		return None
+		return emptyValue
+
+	@classmethod
+	def setConfig(cls, key, value, configType):
+		""" Set a specific config key
+		"""
+		# Check if the key exists in config
+		if key not in cls.config:
+			cls.config[key] = {}
+
+		# Save the value
+		cls.config[key][configType] = value
 
 	@classmethod
 	def _getGlobalPath(cls):
@@ -207,7 +232,7 @@ class ConfigurationTool(object):
 		return os.path.join(path, ".pete", "configuration")
 
 	@classmethod
-	def _getConfigPaths(cls, getGlobal=True, getProject=True, getLocal=True):
+	def _getConfigPaths(cls, configTypes):
 		""" Get the paths for the config files
 
 			Returns a list
@@ -216,17 +241,17 @@ class ConfigurationTool(object):
 		configs = []
 
 		# Check if we need global config
-		if getGlobal is True:
+		if ConfigType.GLOBAL in configTypes:
 			# Get the file path
 			configs.append({"type": ConfigType.GLOBAL, "path": cls._getGlobalPath()})
 
-		# Check if we need global config
-		if getGlobal is True:
+		# Check if we need project config
+		if ConfigType.PROJECT in configTypes:
 			# Get the file path
 			configs.append({"type": ConfigType.PROJECT, "path": cls._getProjectPath()})
 
-		# Check if we need global config
-		if getGlobal is True:
+		# Check if we need local config
+		if ConfigType.LOCAL in configTypes:
 			# Get the file path
 			configs.append({"type": ConfigType.LOCAL, "path": cls._getLocalPath()})
 

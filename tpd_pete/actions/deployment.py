@@ -11,7 +11,7 @@ from PyInquirer import prompt
 from termcolor import cprint as print
 
 from .iaction import IAction
-from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey, ProjectConfigurationKey
+from ..tools.configuration import ConfigurationTool, ConfigKey, ConfigType
 from ..tools.template import TemplateTool
 
 
@@ -40,8 +40,7 @@ class DeploymentAction(IAction):
 		""" Start the deployment
 		"""
 		# Get the configs
-		self.globalConfig = ConfigurationTool.readConfig()
-		self.projectConfig = ConfigurationTool.readConfig(project=True)
+		ConfigurationTool.readConfig()
 
 		# Check if there is an template
 		if os.path.exists("template.yaml") is False:
@@ -110,7 +109,7 @@ class DeploymentAction(IAction):
 
 		# Check the environment
 		if self.environment == EnvironmentEnum.DEVELOPMENT:
-			if self.projectConfig[ProjectConfigurationKey.DEV_SUFFIX] is True:
+			if ConfigurationTool.getConfig(ConfigKey.DEV_SUFFIX) is True:
 				# Add the dev suffix to the items
 				template = TemplateTool.addSuffixToItems(template)
 
@@ -127,8 +126,8 @@ class DeploymentAction(IAction):
 
 		# Add the basic parameters
 		parameters['environment'] = self.environment
-		parameters['stackName'] = self.projectConfig[ProjectConfigurationKey.STACK_NAME] + ("_development" if self.projectConfig[ProjectConfigurationKey.DEV_SUFFIX] is True and self.environment == EnvironmentEnum.DEVELOPMENT else "")
-		parameters['projectName'] = self.projectConfig[ProjectConfigurationKey.STACK_NAME]
+		parameters['stackName'] = ConfigurationTool.getConfig(ConfigKey.STACK_NAME) + ("_development" if ConfigurationTool.getConfig(ConfigKey.DEV_SUFFIX) is True and self.environment == EnvironmentEnum.DEVELOPMENT else "")
+		parameters['projectName'] = ConfigurationTool.getConfig(ConfigKey.STACK_NAME)
 
 		return parameters
 
@@ -180,7 +179,7 @@ class DeploymentAction(IAction):
 		""" Upload the zip file to S3
 		"""
 		# Create a full filename
-		fullFileName = "%s/%s" % ((self.projectConfig[ProjectConfigurationKey.STACK_NAME].lower()), zipName)
+		fullFileName = "%s/%s" % ((ConfigurationTool.getConfig(ConfigKey.STACK_NAME).lower()), zipName)
 
 		# Get the bucket name and profile
 		bucketName = self._getDeploymentBucketName()
@@ -210,22 +209,12 @@ class DeploymentAction(IAction):
 		# Check if we use the development environment
 		if self.environment == EnvironmentEnum.DEVELOPMENT:
 			# Check if the DEV_BUCKET is in the projectConfig
-			if ProjectConfigurationKey.DEV_BUCKET in self.projectConfig:
-				# Use the project override
-				bucketName = self.projectConfig[ProjectConfigurationKey.DEV_BUCKET]
-			else:
-				# Use the global bucket
-				bucketName = self.globalConfig[GlobalConfigurationKey.DEV_BUCKET]
+			bucketName = ConfigurationTool.getConfig(ConfigKey.DEV_BUCKET)
 
 		# This is the production environment
 		else:
 			# Check if the PROD_BUCKET is in the projectConfig
-			if ProjectConfigurationKey.PROD_BUCKET in self.projectConfig:
-				# Use the project override
-				bucketName = self.projectConfig[ProjectConfigurationKey.PROD_BUCKET]
-			else:
-				# Use the global bucket
-				bucketName = self.globalConfig[GlobalConfigurationKey.PROD_BUCKET]
+			bucketName = ConfigurationTool.getConfig(ConfigKey.PROD_BUCKET)
 
 		return bucketName.strip()
 
@@ -237,22 +226,12 @@ class DeploymentAction(IAction):
 		# Check if we use the development environment
 		if self.environment == EnvironmentEnum.DEVELOPMENT:
 			# Check if the DEV_PROFILE is in the projectConfig
-			if ProjectConfigurationKey.DEV_PROFILE in self.projectConfig:
-				# Use the project override
-				profileName = self.projectConfig[ProjectConfigurationKey.DEV_PROFILE]
-			else:
-				# Use the global profile
-				profileName = self.globalConfig[GlobalConfigurationKey.DEV_PROFILE]
+			profileName = ConfigurationTool.getConfig(ConfigKey.DEV_PROFILE)
 
 		# This is the production environment
 		else:
 			# Check if the PROD_PROFILE is in the projectConfig
-			if ProjectConfigurationKey.PROD_PROFILE in self.projectConfig:
-				# Use the project override
-				profileName = self.projectConfig[ProjectConfigurationKey.PROD_PROFILE]
-			else:
-				# Use the global profile
-				profileName = self.globalConfig[GlobalConfigurationKey.PROD_PROFILE]
+			profileName = ConfigurationTool.getConfig(ConfigKey.PROD_PROFILE)
 
 		return profileName.strip()
 
@@ -267,22 +246,12 @@ class DeploymentAction(IAction):
 		# Check if we use the development environment
 		if self.environment == EnvironmentEnum.DEVELOPMENT:
 			# Check if the DEV_REGION is in the projectConfig
-			if ProjectConfigurationKey.DEV_REGION in self.projectConfig:
-				# Use the project override
-				region = self.projectConfig[ProjectConfigurationKey.DEV_REGION]
-			elif GlobalConfigurationKey.DEV_REGION in self.globalConfig:
-				# Use the global profile
-				region = self.globalConfig[GlobalConfigurationKey.DEV_REGION]
+			region = ConfigurationTool.getConfig(ConfigKey.DEV_REGION)
 
 		# This is the production environment
 		else:
 			# Check if the PROD_REGION is in the projectConfig
-			if ProjectConfigurationKey.PROD_REGION in self.projectConfig:
-				# Use the project override
-				region = self.projectConfig[ProjectConfigurationKey.PROD_REGION]
-			elif GlobalConfigurationKey.PROD_REGION in self.globalConfig:
-				# Use the global profile
-				region = self.globalConfig[GlobalConfigurationKey.PROD_REGION]
+			region = ConfigurationTool.getConfig(ConfigKey.PROD_REGION)
 
 		return region
 
@@ -293,7 +262,7 @@ class DeploymentAction(IAction):
 		deploymentBucket = self._getDeploymentBucketName()
 		profileName = self._getDeploymentProfile()
 		region = self._getDeploymentRegion()
-		stackName = self.projectConfig[ProjectConfigurationKey.STACK_NAME]
+		stackName = ConfigurationTool.getConfig(ConfigKey.STACK_NAME)
 
 		# Create the command
 		command = "cd %s && " % self.location
@@ -326,11 +295,15 @@ class DeploymentAction(IAction):
 			# Check if there is an value
 			if parameters[parameterName] in ["String", "Number", "List", "CommaDelimitedList"]:
 				# Check if we have the parameter in de project config
-				if ProjectConfigurationKey.PARAMETERS in self.projectConfig:
-					if str(self.environment) in self.projectConfig[ProjectConfigurationKey.PARAMETERS]:
-						if parameterName in self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)]:
-							parameters[parameterName] = self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)][parameterName]
-							continue
+				parametersConfig = ConfigurationTool.getConfig(ConfigKey.PARAMETERS)
+				if parametersConfig is None:
+					parametersConfig = {}
+
+				# Check if the environment exists in the config
+				if str(self.environment) in parametersConfig:
+					if parameterName in parametersConfig[str(self.environment)]:
+						parameters[parameterName] = parametersConfig[str(self.environment)][parameterName]
+						continue
 
 				# Ask for the value
 				parameterValue, save = self._askForParameterValue(parameterName)
@@ -340,17 +313,16 @@ class DeploymentAction(IAction):
 
 				# Check if we should save the value
 				if save is True:
-					# Check if parameters already exists
-					if ProjectConfigurationKey.PARAMETERS not in self.projectConfig:
-						self.projectConfig[ProjectConfigurationKey.PARAMETERS] = {}
-
 					# Check if the environment exists
-					if str(self.environment) not in self.projectConfig[ProjectConfigurationKey.PARAMETERS]:
-						self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)] = {}
+					if str(self.environment) not in parametersConfig:
+						parametersConfig[str(self.environment)] = {}
+
+					# Set the value in de config
+					parametersConfig[str(self.environment)][parameterName] = parameterValue
 
 					# Save the value
-					self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)][parameterName] = parameterValue
-					ConfigurationTool.saveConfig(self.projectConfig, project=True)
+					ConfigurationTool.setConfig(ConfigKey.PARAMETERS, parametersConfig, ConfigType.PROJECT)
+					ConfigurationTool.saveConfig(ConfigType.PROJECT)
 
 		return parameters
 
