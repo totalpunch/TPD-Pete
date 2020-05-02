@@ -40,7 +40,7 @@ class Validator(object):
 		""" Check if pete init has been run
 		"""
 		# Check the path
-		path = ConfigurationTool.getProjectPath()
+		path = ConfigurationTool._getProjectPath()
 
 		# Check if the path exists
 		if os.path.exists(path) is False:
