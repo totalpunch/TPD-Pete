@@ -27,7 +27,7 @@ class TemplateTool(object):
 		"AWS::Events::Rule",
 		"AWS::IAM::Role",
 		"AWS::Lambda::Permission",
-		"AWS::SSM:Parameter"
+		"AWS::SSM::Parameter"
 	]
 
 	@classmethod
