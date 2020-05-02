@@ -49,6 +49,10 @@ class ConfigurationTool(object):
 			path = config['path']
 			configType = config['type']
 
+			# Check if the location exists
+			if os.path.exists(path) is False:
+				continue
+
 			# Read the config
 			try:
 				f = open(path, "r")
@@ -230,6 +234,34 @@ class ConfigurationTool(object):
 			raise Exception("Could not find the configuration file. Did you run init for this project?")
 
 		return os.path.join(path, ".pete", "configuration")
+
+	@classmethod
+	def _getLocalPath(cls):
+		""" Get the path to the local project configuration files
+		"""
+		# Get the current working dir
+		workingDir = os.getcwd()
+		path = None
+
+		# Search for the pete folder
+		while True:
+			# Check if we reached the top
+			if os.path.ismount(workingDir) is True:
+				break
+
+			# Check if a directory exists
+			if ".pete" in os.listdir(workingDir):
+				path = workingDir
+				break
+
+			# Move a directory up
+			workingDir = os.path.dirname()[0]
+
+		# Check if we found a path
+		if path is None:
+			raise Exception("Could not find the configuration file. Did you run init for this project?")
+
+		return os.path.join(path, ".pete", "local")
 
 	@classmethod
 	def _getConfigPaths(cls, configTypes):
