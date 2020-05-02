@@ -57,7 +57,7 @@ class ConfigurationTool(object):
 				break
 
 			# Move a directory up
-			workingDir = os.path.dirname()[0]
+			workingDir = os.path.dirname(workingDir)[0]
 
 		# Check if we found a path
 		if path is None:
