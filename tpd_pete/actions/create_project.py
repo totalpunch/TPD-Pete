@@ -230,23 +230,6 @@ class CreateProjectAction(IAction):
 		print("All done! You can now use pete deploy in this project. Want to change some details? Just run init again.", "yellow")
 		return True
 
-	def _askOverride(self, default=False):
-		""" Ask if you want to override
-		"""
-		# Ask the question
-		answer = prompt({
-			"type": "confirm",
-			"message": "Do you want to override?",
-			"name": "override",
-			"default": default
-		})
-
-		# Check if there is an answer
-		if answer == {}:
-			sys.exit()
-
-		return answer['override']
-
 	def _askSuffix(self, default=True):
 		""" Ask if you want to the _DEV suffix
 		"""
