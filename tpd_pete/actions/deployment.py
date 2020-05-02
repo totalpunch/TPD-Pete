@@ -58,8 +58,14 @@ class DeploymentAction(IAction):
 
 		# Create a new temporary template
 		with Halo(text="Creating template") as spinner:
-			parameters = self._createTemporaryTemplate()
-			spinner.succeed()
+			try:
+				parameters = self._createTemporaryTemplate()
+			except Exception as e:
+				spinner.fail()
+				print(e, "red")
+				sys.exit()
+			else:
+				spinner.succeed()
 
 		# Check if there are other parameters
 		parameters = self._checkParameters(parameters)

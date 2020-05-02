@@ -40,7 +40,16 @@ class TemplateTool(object):
 		# Change to JSON
 		templateContent = dump_json(templateContent)
 
-		return json.loads(templateContent)
+		# Load the JSON
+		templateContent = json.loads(templateContent)
+
+		# Check if it is valid
+		if "Resources" not in templateContent or \
+			templateContent['Resources'] is None or \
+			len(templateContent['Resources']) == 0:
+			raise Exception("You dont not have any Resource in your template")
+
+		return templateContent
 
 	@classmethod
 	def addSuffixToItems(cls, templateContent):
