@@ -81,8 +81,11 @@ class DeploymentAction(IAction):
 
 		# Send it to CloudFormation
 		with Halo(text="CloudFormation deploying") as spinner:
-			self._cloudformationDeploy(parameters, s3Location)
-			spinner.succeed()
+			status = self._cloudformationDeploy(parameters, s3Location)
+			if status is True:
+				spinner.succeed()
+			else:
+				spinner.fail()
 
 	def _createTempDir(self):
 		""" Create a temporary directory for deployment
@@ -316,7 +319,11 @@ class DeploymentAction(IAction):
 		print(command)
 
 		# Run the command
-		subprocess.call(command, shell=True)
+		try:
+			subprocess.check_call(command, shell=True)
+		except Exception:
+			return False
+		return True
 
 	def _checkParameters(self, parameters):
 		""" Check if there are other parameters we need information about
