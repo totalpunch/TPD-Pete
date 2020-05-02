@@ -114,3 +114,20 @@ class IAction(object):
 			sys.exit()
 
 		return answer['region']
+
+	def _askOverride(self, default=False):
+		""" Ask if you want to override
+		"""
+		# Ask the question
+		answer = prompt({
+			"type": "confirm",
+			"message": "Do you want to override?",
+			"name": "override",
+			"default": default
+		})
+
+		# Check if there is an answer
+		if answer == {}:
+			sys.exit()
+
+		return answer['override']

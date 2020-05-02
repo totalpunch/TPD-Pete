@@ -4,7 +4,7 @@ from PyInquirer import prompt, Separator
 from termcolor import cprint as print
 
 from .iaction import IAction
-from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey
+from ..tools.configuration import ConfigurationTool, ConfigKey, ConfigType
 from ..validator import Validator
 
 
@@ -20,18 +20,16 @@ class ConfigureAction(IAction):
 
 		# Check if there is already a config
 		if Validator.hasPeteSetup() is True:
-			data = ConfigurationTool.readConfig()
-		else:
-			data = {}
+			ConfigurationTool.readConfig(getGlobal=True, getProject=False, getLocal=False)
 
 		# Fill temporary config
 		self.config = {}
-		self.config[GlobalConfigurationKey.DEV_PROFILE] = data[GlobalConfigurationKey.DEV_PROFILE] if GlobalConfigurationKey.DEV_PROFILE in data else "<empty>"
-		self.config[GlobalConfigurationKey.DEV_BUCKET] = data[GlobalConfigurationKey.DEV_BUCKET] if GlobalConfigurationKey.DEV_BUCKET in data else "<empty>"
-		self.config[GlobalConfigurationKey.DEV_REGION] = data[GlobalConfigurationKey.DEV_REGION] if GlobalConfigurationKey.DEV_REGION in data else ""
-		self.config[GlobalConfigurationKey.PROD_PROFILE] = data[GlobalConfigurationKey.PROD_PROFILE] if GlobalConfigurationKey.PROD_PROFILE in data else "<empty>"
-		self.config[GlobalConfigurationKey.PROD_BUCKET] = data[GlobalConfigurationKey.PROD_BUCKET] if GlobalConfigurationKey.PROD_BUCKET in data else "<empty>"
-		self.config[GlobalConfigurationKey.PROD_REGION] = data[GlobalConfigurationKey.PROD_REGION] if GlobalConfigurationKey.PROD_REGION in data else ""
+		self.config[ConfigKey.DEV_PROFILE] = self._getConfigValue(ConfigKey.DEV_PROFILE)
+		self.config[ConfigKey.PROD_PROFILE] = self._getConfigValue(ConfigKey.PROD_PROFILE)
+		self.config[ConfigKey.DEV_BUCKET] = self._getConfigValue(ConfigKey.DEV_BUCKET)
+		self.config[ConfigKey.PROD_BUCKET] = self._getConfigValue(ConfigKey.PROD_BUCKET)
+		self.config[ConfigKey.DEV_REGION] = self._getConfigValue(ConfigKey.DEV_REGION)
+		self.config[ConfigKey.PROD_REGION] = self._getConfigValue(ConfigKey.PROD_REGION)
 
 		# Keep showing main config
 		while True:
@@ -39,39 +37,55 @@ class ConfigureAction(IAction):
 
 			if answer == 1:
 				# Ask development profile
-				self.config[GlobalConfigurationKey.DEV_PROFILE] = self._askAWSProfile(default=self.config[GlobalConfigurationKey.DEV_PROFILE] if self.config[GlobalConfigurationKey.DEV_PROFILE] != "<empty>" else None)
+				defaultValue = self._getConfigValue(ConfigKey.DEV_PROFILE)
+				value = self._askAWSProfile(default=defaultValue)
+				self.setValue(ConfigKey.DEV_PROFILE, value)
 
 			elif answer == 2:
 				# Ask development bucket
-				self.config[GlobalConfigurationKey.DEV_BUCKET] = self._askS3Bucket(
-					profile=self.config[GlobalConfigurationKey.DEV_PROFILE],
-					default=self.config[GlobalConfigurationKey.DEV_BUCKET] if self.config[GlobalConfigurationKey.DEV_BUCKET] != "<empty>" else None
-				)
+				profile = self._getConfigValue(ConfigKey.DEV_PROFILE)
+				if profile is None:
+					print("Configure the profile first", "orange")
+					continue
+				defaultValue = self._getConfigValue(ConfigKey.DEV_BUCKET)
+				value = self._askS3Bucket(profile=profile, default=defaultValue)
+				self.setValue(ConfigKey.DEV_BUCKET, value)
 
 			elif answer == 3:
 				# Ask development region
-				self.config[GlobalConfigurationKey.DEV_REGION] = self._askAWSRegion(
-					profile=self.config[GlobalConfigurationKey.DEV_PROFILE],
-					default=self.config[GlobalConfigurationKey.DEV_REGION] if self.config[GlobalConfigurationKey.DEV_REGION] != "<empty>" else None
-				)
+				profile = self._getConfigValue(ConfigKey.DEV_PROFILE)
+				if profile is None:
+					print("Configure the profile first", "orange")
+					continue
+				defaultValue = self._getConfigValue(ConfigKey.DEV_REGION)
+				value = self._askAWSRegion(profile=profile, default=defaultValue)
+				self.setValue(ConfigKey.DEV_REGION, value)
 
 			elif answer == 5:
 				# Ask production profile
-				self.config[GlobalConfigurationKey.PROD_PROFILE] = self._askAWSProfile(default=self.config[GlobalConfigurationKey.PROD_PROFILE] if self.config[GlobalConfigurationKey.PROD_PROFILE] != "<empty>" else None)
+				defaultValue = self._getConfigValue(ConfigKey.PROD_PROFILE)
+				value = self._askAWSProfile(default=defaultValue)
+				self.setValue(ConfigKey.PROD_PROFILE, value)
 
 			elif answer == 6:
 				# Ask production bucket
-				self.config[GlobalConfigurationKey.PROD_BUCKET] = self._askS3Bucket(
-					profile=self.config[GlobalConfigurationKey.PROD_PROFILE],
-					default=self.config[GlobalConfigurationKey.PROD_BUCKET] if self.config[GlobalConfigurationKey.PROD_BUCKET] != "<empty>" else None
-				)
+				profile = self._getConfigValue(ConfigKey.PROD_PROFILE)
+				if profile is None:
+					print("Configure the profile first", "orange")
+					continue
+				defaultValue = self._getConfigValue(ConfigKey.PROD_BUCKET)
+				value = self._askS3Bucket(profile=profile, default=defaultValue)
+				self.setValue(ConfigKey.PROD_BUCKET, value)
 
 			elif answer == 7:
 				# Ask production region
-				self.config[GlobalConfigurationKey.PROD_REGION] = self._askAWSRegion(
-					profile=self.config[GlobalConfigurationKey.PROD_PROFILE],
-					default=self.config[GlobalConfigurationKey.PROD_REGION] if self.config[GlobalConfigurationKey.PROD_REGION] != "<empty>" else None
-				)
+				profile = self._getConfigValue(ConfigKey.PROD_PROFILE)
+				if profile is None:
+					print("Configure the profile first", "orange")
+					continue
+				defaultValue = self._getConfigValue(ConfigKey.PROD_REGION)
+				value = self._askAWSRegion(profile=profile, default=defaultValue)
+				self.setValue(ConfigKey.PROD_REGION, value)
 
 			elif answer == 8:
 				# Save the config
@@ -85,13 +99,13 @@ class ConfigureAction(IAction):
 		# Make the options for the list
 		choices = []
 		choices.append(Separator("~ Development ~"))
-		choices.append("  AWS profile: %s" % self.config[GlobalConfigurationKey.DEV_PROFILE])
-		choices.append("  AWS bucket: %s" % self.config[GlobalConfigurationKey.DEV_BUCKET])
-		choices.append("  AWS region: %s" % self.config[GlobalConfigurationKey.DEV_REGION])
+		choices.append("  AWS profile: %s" % self.config[ConfigKey.DEV_PROFILE])
+		choices.append("  AWS bucket: %s" % self.config[ConfigKey.DEV_BUCKET])
+		choices.append("  AWS region: %s" % self.config[ConfigKey.DEV_REGION])
 		choices.append(Separator("~ Production ~"))
-		choices.append("  AWS profile: %s" % self.config[GlobalConfigurationKey.PROD_PROFILE])
-		choices.append("  AWS bucket: %s" % self.config[GlobalConfigurationKey.PROD_BUCKET])
-		choices.append("  AWS region: %s" % self.config[GlobalConfigurationKey.PROD_REGION])
+		choices.append("  AWS profile: %s" % self.config[ConfigKey.PROD_PROFILE])
+		choices.append("  AWS bucket: %s" % self.config[ConfigKey.PROD_BUCKET])
+		choices.append("  AWS region: %s" % self.config[ConfigKey.PROD_REGION])
 		choices.append("Done")
 
 		# Show the list
@@ -111,30 +125,33 @@ class ConfigureAction(IAction):
 
 		return index
 
+	def _getConfigValue(self, key):
+		""" Get the config value
+		"""
+		# Get the value from the config
+		value = ConfigurationTool.getConfigRow(key)
+
+		# Check if there is an value
+		if value is None:
+			return None
+
+		# Check if global value exists
+		if ConfigType.GLOBAL in value:
+			return value[ConfigType.GLOBAL]
+
+		return None
+
+	def setValue(self, key, value):
+		""" Set a config value
+		"""
+		self.config[key] = value
+		ConfigurationTool.setConfig(key, value, ConfigType.GLOBAL)
+
 	def _saveConfig(self):
 		""" Save the config to file
 		"""
-		# Check the data
-		for key, value in self.config.items():
-			# Cant save empty values
-			if value == "<empty>":
-				return False
-
-		# Build a new config
-		data = {}
-
-		# Combine the data
-		data[GlobalConfigurationKey.DEV_PROFILE] = self.config[GlobalConfigurationKey.DEV_PROFILE]
-		data[GlobalConfigurationKey.PROD_PROFILE] = self.config[GlobalConfigurationKey.PROD_PROFILE]
-		data[GlobalConfigurationKey.DEV_BUCKET] = self.config[GlobalConfigurationKey.DEV_BUCKET]
-		data[GlobalConfigurationKey.PROD_BUCKET] = self.config[GlobalConfigurationKey.PROD_BUCKET]
-		if self.config[GlobalConfigurationKey.DEV_REGION] not in [None, "", "<empty>"]:
-			data[GlobalConfigurationKey.DEV_REGION] = self.config[GlobalConfigurationKey.DEV_REGION]
-		if self.config[GlobalConfigurationKey.PROD_REGION] not in [None, "", "<empty>"]:
-			data[GlobalConfigurationKey.PROD_REGION] = self.config[GlobalConfigurationKey.PROD_REGION]
-
 		# Save the config
-		ConfigurationTool.saveConfig(data)
+		ConfigurationTool.saveConfig(ConfigType.GLOBAL)
 
 		# Everything is done
 		print("All done! You can now use pete init or deploy in your projects", "yellow")
