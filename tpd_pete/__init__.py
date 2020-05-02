@@ -1,1 +1,1 @@
-print("TPD Deployment - Project Pete - v0.2.1")
+VERSION = "0.2.1"
