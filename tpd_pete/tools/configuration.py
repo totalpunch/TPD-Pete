@@ -50,7 +50,7 @@ class ConfigurationTool(object):
 			configType = config['type']
 
 			# Check if the location exists
-			if os.path.exists(path) is False:
+			if path is None or os.path.exists(path) is False:
 				continue
 
 			# Read the config
@@ -231,7 +231,7 @@ class ConfigurationTool(object):
 
 		# Check if we found a path
 		if path is None:
-			raise Exception("Could not find the configuration file. Did you run init for this project?")
+			path = os.getcwd()
 
 		return os.path.join(path, ".pete", "configuration")
 
@@ -255,11 +255,11 @@ class ConfigurationTool(object):
 				break
 
 			# Move a directory up
-			workingDir = os.path.dirname()[0]
+			workingDir = os.path.dirname(workingDir)[0]
 
 		# Check if we found a path
 		if path is None:
-			raise Exception("Could not find the configuration file. Did you run init for this project?")
+			path = os.getcwd()
 
 		return os.path.join(path, ".pete", "local")
 
