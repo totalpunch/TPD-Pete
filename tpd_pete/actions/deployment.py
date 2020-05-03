@@ -145,7 +145,7 @@ class DeploymentAction(IAction):
 		"""
 		# Check NodeJS 'package.json'
 		if os.path.exists("package.json") is True:
-			subprocess.check_call("npm install --prefix %s" % self.location, shell=True)
+			subprocess.check_call("npm install --production --ignore-scripts --no-audit --prefix %s" % self.location, shell=True)
 
 		# Check Python 'requirements.txt'
 		if os.path.exists("requirements.txt") is True:
