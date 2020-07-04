@@ -150,7 +150,7 @@ class DeploymentAction(IAction):
 		# Check Python 'poetry.lock'
 		if os.path.exists("poetry.lock") is True:
 			subprocess.check_call("poetry install", shell=True)
-			os.environ["VIRTUAL_ENV"] = os.system("poetry env info -p")
+			os.environ["VIRTUAL_ENV"] = os.system("poetry env info -p").strip()
 
 		# Check Python virtualenv
 		if os.getenv("VIRTUAL_ENV") is not None:
