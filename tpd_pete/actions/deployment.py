@@ -1,21 +1,18 @@
 import json
 import os
 import subprocess
-import shutil
 import sys
 import time
 import tempfile
-from enum import Enum, auto as autoEnum
+from enum import Enum
 
 from halo import Halo
 from PyInquirer import prompt
 from termcolor import cprint as print
 
 from .iaction import IAction
-from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey, ProjectConfigurationKey
-from ..tools.awscli import AWSCliTool
+from ..tools.configuration import ConfigurationTool, ConfigKey, ConfigType
 from ..tools.template import TemplateTool
-from ..validator import Validator
 
 
 class EnvironmentEnum(Enum):
@@ -43,8 +40,7 @@ class DeploymentAction(IAction):
 		""" Start the deployment
 		"""
 		# Get the configs
-		self.globalConfig = ConfigurationTool.readConfig()
-		self.projectConfig = ConfigurationTool.readConfig(project=True)
+		ConfigurationTool.readConfig()
 
 		# Check if there is an template
 		if os.path.exists("template.yaml") is False:
@@ -61,8 +57,14 @@ class DeploymentAction(IAction):
 
 		# Create a new temporary template
 		with Halo(text="Creating template") as spinner:
-			parameters = self._createTemporaryTemplate()
-			spinner.succeed()
+			try:
+				parameters = self._createTemporaryTemplate()
+			except Exception as e:
+				spinner.fail()
+				print(e, "red")
+				sys.exit()
+			else:
+				spinner.succeed()
 
 		# Check if there are other parameters
 		parameters = self._checkParameters(parameters)
@@ -84,9 +86,11 @@ class DeploymentAction(IAction):
 
 		# Send it to CloudFormation
 		with Halo(text="CloudFormation deploying") as spinner:
-			self._cloudformationDeploy(parameters, s3Location)
-			spinner.succeed()
-
+			status = self._cloudformationDeploy(parameters, s3Location)
+			if status is True:
+				spinner.succeed()
+			else:
+				spinner.fail()
 
 	def _createTempDir(self):
 		""" Create a temporary directory for deployment
@@ -114,7 +118,7 @@ class DeploymentAction(IAction):
 
 		# Check the environment
 		if self.environment == EnvironmentEnum.DEVELOPMENT:
-			if self.projectConfig[ProjectConfigurationKey.DEV_SUFFIX] is True:
+			if ConfigurationTool.getConfig(ConfigKey.DEV_SUFFIX) is True:
 				# Add the dev suffix to the items
 				template = TemplateTool.addSuffixToItems(template)
 
@@ -131,8 +135,8 @@ class DeploymentAction(IAction):
 
 		# Add the basic parameters
 		parameters['environment'] = self.environment
-		parameters['stackName'] = self.projectConfig[ProjectConfigurationKey.STACK_NAME] + ("_development" if self.projectConfig[ProjectConfigurationKey.DEV_SUFFIX] is True and self.environment == EnvironmentEnum.DEVELOPMENT else "")
-		parameters['projectName'] = self.projectConfig[ProjectConfigurationKey.STACK_NAME]
+		parameters['stackName'] = ConfigurationTool.getConfig(ConfigKey.STACK_NAME) + ("_development" if ConfigurationTool.getConfig(ConfigKey.DEV_SUFFIX) is True and self.environment == EnvironmentEnum.DEVELOPMENT else "")
+		parameters['projectName'] = ConfigurationTool.getConfig(ConfigKey.STACK_NAME)
 
 		return parameters
 
@@ -141,7 +145,7 @@ class DeploymentAction(IAction):
 		"""
 		# Check NodeJS 'package.json'
 		if os.path.exists("package.json") is True:
-			subprocess.check_call("npm install --prefix %s" % self.location, shell=True)
+			subprocess.check_call("npm install --production --ignore-scripts --no-audit --prefix %s" % self.location, shell=True)
 
 		# Check Python 'requirements.txt'
 		if os.path.exists("requirements.txt") is True:
@@ -150,7 +154,7 @@ class DeploymentAction(IAction):
 		# Check Python 'poetry.lock'
 		if os.path.exists("poetry.lock") is True:
 			subprocess.check_call("poetry install", shell=True)
-			os.environ["VIRTUAL_ENV"] = os.system("poetry env info -p").strip()
+			os.environ["VIRTUAL_ENV"] = os.system("poetry env info -p").read().strip()
 
 		# Check Python virtualenv
 		if os.getenv("VIRTUAL_ENV") is not None:
@@ -184,17 +188,22 @@ class DeploymentAction(IAction):
 		""" Upload the zip file to S3
 		"""
 		# Create a full filename
-		fullFileName="%s/%s" % ((self.projectConfig[ProjectConfigurationKey.STACK_NAME].lower()), zipName)
+		fullFileName = "%s/%s" % ((ConfigurationTool.getConfig(ConfigKey.STACK_NAME).lower()), zipName)
 
-		# Get the bucket name
+		# Get the bucket name and profile
 		bucketName = self._getDeploymentBucketName()
+		profileName = self._getDeploymentProfile()
+		region = self._getDeploymentRegion()
 
 		# Build the full bucket string
-		fullFileName = "s3://%s/%s" % (bucketName, fullFileName)
+		bucketFullFileName = "s3://%s/%s" % (bucketName, fullFileName)
 
 		# Opbouwen van het commando
 		command = "cd %s && " % self.location
-		command = command + "aws s3 cp %s %s" % (zipName, fullFileName)
+		command = command + "aws s3 cp %s %s " % (zipName, bucketFullFileName)
+		command = command + "--profile %s " % (profileName)
+		if region is not None:
+			command = command + "--region %s " % (region)
 
 		# Upload the file
 		subprocess.check_call(command, shell=True)
@@ -209,22 +218,12 @@ class DeploymentAction(IAction):
 		# Check if we use the development environment
 		if self.environment == EnvironmentEnum.DEVELOPMENT:
 			# Check if the DEV_BUCKET is in the projectConfig
-			if ProjectConfigurationKey.DEV_BUCKET in self.projectConfig:
-				# Use the project override
-				bucketName = self.projectConfig[ProjectConfigurationKey.DEV_BUCKET]
-			else:
-				# Use the global bucket
-				bucketName = self.globalConfig[GlobalConfigurationKey.DEV_BUCKET]
+			bucketName = ConfigurationTool.getConfig(ConfigKey.DEV_BUCKET)
 
 		# This is the production environment
 		else:
 			# Check if the PROD_BUCKET is in the projectConfig
-			if ProjectConfigurationKey.PROD_BUCKET in self.projectConfig:
-				# Use the project override
-				bucketName = self.projectConfig[ProjectConfigurationKey.PROD_BUCKET]
-			else:
-				# Use the global bucket
-				bucketName = self.globalConfig[GlobalConfigurationKey.PROD_BUCKET]
+			bucketName = ConfigurationTool.getConfig(ConfigKey.PROD_BUCKET)
 
 		return bucketName.strip()
 
@@ -236,24 +235,34 @@ class DeploymentAction(IAction):
 		# Check if we use the development environment
 		if self.environment == EnvironmentEnum.DEVELOPMENT:
 			# Check if the DEV_PROFILE is in the projectConfig
-			if ProjectConfigurationKey.DEV_PROFILE in self.projectConfig:
-				# Use the project override
-				profileName = self.projectConfig[ProjectConfigurationKey.DEV_PROFILE]
-			else:
-				# Use the global profile
-				profileName = self.globalConfig[GlobalConfigurationKey.DEV_PROFILE]
+			profileName = ConfigurationTool.getConfig(ConfigKey.DEV_PROFILE)
 
 		# This is the production environment
 		else:
 			# Check if the PROD_PROFILE is in the projectConfig
-			if ProjectConfigurationKey.PROD_PROFILE in self.projectConfig:
-				# Use the project override
-				profileName = self.projectConfig[ProjectConfigurationKey.PROD_PROFILE]
-			else:
-				# Use the global profile
-				profileName = self.globalConfig[GlobalConfigurationKey.PROD_PROFILE]
+			profileName = ConfigurationTool.getConfig(ConfigKey.PROD_PROFILE)
 
 		return profileName.strip()
+
+	def _getDeploymentRegion(self):
+		""" Get the deployment AWS Region
+
+			Returns name of region
+		"""
+		# Default option for region
+		region = None
+
+		# Check if we use the development environment
+		if self.environment == EnvironmentEnum.DEVELOPMENT:
+			# Check if the DEV_REGION is in the projectConfig
+			region = ConfigurationTool.getConfig(ConfigKey.DEV_REGION)
+
+		# This is the production environment
+		else:
+			# Check if the PROD_REGION is in the projectConfig
+			region = ConfigurationTool.getConfig(ConfigKey.PROD_REGION)
+
+		return region
 
 	def _cloudformationDeploy(self, parameters, s3Location):
 		""" Deploy to CloudFormation
@@ -261,7 +270,8 @@ class DeploymentAction(IAction):
 		# Get the information
 		deploymentBucket = self._getDeploymentBucketName()
 		profileName = self._getDeploymentProfile()
-		stackName = self.projectConfig[ProjectConfigurationKey.STACK_NAME]
+		region = self._getDeploymentRegion()
+		stackName = ConfigurationTool.getConfig(ConfigKey.STACK_NAME)
 
 		# Create the command
 		command = "cd %s && " % self.location
@@ -270,10 +280,12 @@ class DeploymentAction(IAction):
 		command = command + "--template-file .deployment.template.json "
 		command = command + "--stack-name %s " % (stackName)
 		command = command + "--profile %s " % (profileName)
+		if region is not None:
+			command = command + "--region %s " % (region)
 		command = command + "--capabilities CAPABILITY_IAM "
 		command = command + "--parameter-overrides "
-		command = command + """deploymentBucket="%s" """ % (deploymentBucket)
-		command = command + """s3FileName="%s" """ % (s3Location)
+		command = command + "deploymentBucket=\"%s\" " % (deploymentBucket)
+		command = command + "s3FileName=\"%s\" " % (s3Location)
 
 		# Walk trought the parameters
 		for key, value in parameters.items():
@@ -282,7 +294,11 @@ class DeploymentAction(IAction):
 		print(command)
 
 		# Run the command
-		subprocess.check_call(command, shell=True)
+		try:
+			subprocess.check_call(command, shell=True)
+		except Exception:
+			return False
+		return True
 
 	def _checkParameters(self, parameters):
 		""" Check if there are other parameters we need information about
@@ -292,11 +308,15 @@ class DeploymentAction(IAction):
 			# Check if there is an value
 			if parameters[parameterName] in ["String", "Number", "List", "CommaDelimitedList"]:
 				# Check if we have the parameter in de project config
-				if ProjectConfigurationKey.PARAMETERS in self.projectConfig:
-					if str(self.environment) in self.projectConfig[ProjectConfigurationKey.PARAMETERS]:
-						if parameterName in self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)]:
-							parameters[parameterName] = self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)][parameterName]
-							continue
+				parametersConfig = ConfigurationTool.getConfig(ConfigKey.PARAMETERS)
+				if parametersConfig is None:
+					parametersConfig = {}
+
+				# Check if the environment exists in the config
+				if str(self.environment) in parametersConfig:
+					if parameterName in parametersConfig[str(self.environment)]:
+						parameters[parameterName] = parametersConfig[str(self.environment)][parameterName]
+						continue
 
 				# Ask for the value
 				parameterValue, save = self._askForParameterValue(parameterName)
@@ -306,17 +326,16 @@ class DeploymentAction(IAction):
 
 				# Check if we should save the value
 				if save is True:
-					# Check if parameters already exists
-					if ProjectConfigurationKey.PARAMETERS not in self.projectConfig:
-						self.projectConfig[ProjectConfigurationKey.PARAMETERS] = {}
-
 					# Check if the environment exists
-					if str(self.environment) not in self.projectConfig[ProjectConfigurationKey.PARAMETERS]:
-						self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)] = {}
+					if str(self.environment) not in parametersConfig:
+						parametersConfig[str(self.environment)] = {}
+
+					# Set the value in de config
+					parametersConfig[str(self.environment)][parameterName] = parameterValue
 
 					# Save the value
-					self.projectConfig[ProjectConfigurationKey.PARAMETERS][str(self.environment)][parameterName] = parameterValue
-					ConfigurationTool.saveConfig(self.projectConfig, project=True)
+					ConfigurationTool.setConfig(ConfigKey.PARAMETERS, parametersConfig, ConfigType.PROJECT)
+					ConfigurationTool.saveConfig(ConfigType.PROJECT)
 
 		return parameters
 

@@ -18,12 +18,16 @@ class TemplateTool(object):
 	}
 
 	NO_TYPE_TAGS_SUPPORT = [
-		"AWS::AppSync::GraphQLSchema",
+		"AWS::ApiGateway::Deployment",
+		"AWS::ApiGateway::Method",
+		"AWS::ApiGateway::Resource",
 		"AWS::AppSync::DataSource",
+		"AWS::AppSync::GraphQLSchema",
 		"AWS::AppSync::Resolver",
-		"AWS::IAM::Role",
 		"AWS::Events::Rule",
-		"AWS::Lambda::Permission"
+		"AWS::IAM::Role",
+		"AWS::Lambda::Permission",
+		"AWS::SSM::Parameter"
 	]
 
 	@classmethod
@@ -36,7 +40,16 @@ class TemplateTool(object):
 		# Change to JSON
 		templateContent = dump_json(templateContent)
 
-		return json.loads(templateContent)
+		# Load the JSON
+		templateContent = json.loads(templateContent)
+
+		# Check if it is valid
+		if "Resources" not in templateContent or \
+			templateContent['Resources'] is None or \
+			len(templateContent['Resources']) == 0:
+			raise Exception("You dont not have any Resource in your template")
+
+		return templateContent
 
 	@classmethod
 	def addSuffixToItems(cls, templateContent):
@@ -96,15 +109,15 @@ class TemplateTool(object):
 
 			# Add the environment tag
 			if "Environment" not in keyNames:
-				(templateContent['Resources'][itemName]['Properties']['Tags']).append({"Key": "Environment", "Value": {"Ref":  "environment"}})
+				(templateContent['Resources'][itemName]['Properties']['Tags']).append({"Key": "Environment", "Value": {"Ref": "environment"}})
 
 			# Add the stack tag
 			if "Stack" not in keyNames:
-				(templateContent['Resources'][itemName]['Properties']['Tags']).append({"Key": "Stack", "Value": {"Ref":  "stackName"}})
+				(templateContent['Resources'][itemName]['Properties']['Tags']).append({"Key": "Stack", "Value": {"Ref": "stackName"}})
 
 			# Add the project tag
 			if "Project" not in keyNames:
-				(templateContent['Resources'][itemName]['Properties']['Tags']).append({"Key": "Project", "Value": {"Ref":  "projectName"}})
+				(templateContent['Resources'][itemName]['Properties']['Tags']).append({"Key": "Project", "Value": {"Ref": "projectName"}})
 
 		return templateContent
 
@@ -123,7 +136,7 @@ class TemplateTool(object):
 		if "s3FileName" not in templateContent['Parameters']:
 			templateContent['Parameters']['s3FileName'] = {"Type": "String"}
 		if "environment" not in templateContent['Parameters']:
-  			templateContent['Parameters']['environment'] = {"Type": "String"}
+			templateContent['Parameters']['environment'] = {"Type": "String"}
 		if "deploymentBucket" not in templateContent['Parameters']:
 			templateContent['Parameters']['deploymentBucket'] = {"Type": "String"}
 		if "stackName" not in templateContent['Parameters']:

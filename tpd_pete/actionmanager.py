@@ -1,6 +1,8 @@
 from .actions.configure import ConfigureAction
 from .actions.create_project import CreateProjectAction
 from .actions.deployment import DeploymentAction
+from .actions.localoverride import SetupLocalOverrideAction
+
 
 class ActionManager(object):
 	@classmethod
@@ -10,9 +12,13 @@ class ActionManager(object):
 		return ConfigureAction().start()
 
 	@classmethod
-	def createProject(cls):
+	def createProject(cls, local=False):
 		""" Create a new project
 		"""
+		# Check if this is the local configuation override action
+		if local is True:
+			return SetupLocalOverrideAction().start()
+
 		return CreateProjectAction().start()
 
 	@classmethod
