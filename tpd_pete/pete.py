@@ -21,6 +21,7 @@ class Pete(object):
 		parser = argparse.ArgumentParser(prog="pete", description="TPD Pete is an AWS deployment tool for AWS Cloudformation")
 		parser.add_argument("mode", choices=["configure", "init", "deploy"], help="Select a mode")
 		parser.add_argument("--production", help="Deploy a project to your production AWS profile", action="store_true")
+		parser.add_argument("--local", help="Override project setup with local development overrides", action="store_true")
 
 		# Create a argparse group with the modes
 		# modeGroup = parser.add_argument_group("Choices of modes")
@@ -41,7 +42,7 @@ class Pete(object):
 
 		# Check if we used the init mode
 		if args.mode == "init":
-			return ActionManager.createProject()
+			return ActionManager.createProject(local=args.local)
 
 		# Check if we have a project configured Pete
 		if Validator.hasPeteProjectSetup() is False:

@@ -1,14 +1,23 @@
+import os
 from setuptools import setup, find_packages
+import tpd_pete
 
 
+# Read the contents of the README file
+folderPath = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(folderPath, "README.md"), encoding="utf-8") as f:
+	longDescription = f.read()
+
+
+# Generate setup config
 setup(
 	name="tpd_pete",
-	version="0.1.0",
+	version=tpd_pete.VERSION,
 	description="TPD Pete is a AWS Deployment tool for AWS Cloudformation",
 	author="TotalPunch Development",
 	author_email="info@totalpunch.nl",
 	url="https://github.com/totalpunch/TPD-Pete",
-	download_url="https://github.com/totalpunch/TPD-Pete/archive/0.1.0.tar.gz",
+	download_url="https://github.com/totalpunch/TPD-Pete/archive/%s.tar.gz" % tpd_pete.VERSION,
 	license="MIT",
 	packages=find_packages(),
 	entry_points={
@@ -24,5 +33,7 @@ setup(
 		"cfn_flip==1.2.2"
 	],
 	zip_safe=False,
-	python_requires=">=3.7"
+	python_requires=">=3.7",
+	long_description=longDescription,
+	long_description_content_type="text/markdown"
 )

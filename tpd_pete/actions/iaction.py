@@ -3,7 +3,6 @@ import sys
 from PyInquirer import prompt
 from termcolor import cprint as print
 
-from ..tools.configuration import ConfigurationTool, GlobalConfigurationKey
 from ..tools.awscli import AWSCliTool
 
 
@@ -36,11 +35,11 @@ class IAction(object):
 
 		return answer['profile']
 
-	def _askS3Bucket(self, default=None):
+	def _askS3Bucket(self, profile, default=None):
 		""" Ask for an S3 Bucket
 		"""
 		# Get all the profile from AWS Cli
-		buckets = AWSCliTool.getS3Buckets()
+		buckets = AWSCliTool.getS3Buckets(profile=profile)
 
 		# Check if there are buckets
 		if len(buckets) == 0:
@@ -79,3 +78,56 @@ class IAction(object):
 			sys.exit()
 
 		return answer['name']
+
+	def _askAWSRegion(self, profile, default=None):
+		""" Ask to override AWS region
+		"""
+		# Get the default region
+		defaultRegion = AWSCliTool.getRegion(profile)
+
+		# Ask to override the region
+		answer = prompt({
+			"type": "confirm",
+			"name": "override",
+			"message": "Do you want to override the default region (%s)?" % defaultRegion,
+			"default": True if default is not None else False
+		})
+
+		# Check if there is an answer
+		if answer == {}:
+			sys.exit()
+
+		# Check the answer
+		if answer['override'] is False:
+			return None
+
+		# Ask for the region
+		answer = prompt({
+			"type": "input",
+			"name": "region",
+			"message": "What region do you want to use?",
+			"default": default
+		})
+
+		# Check if there is an answer
+		if answer == {}:
+			sys.exit()
+
+		return answer['region']
+
+	def _askOverride(self, default=False):
+		""" Ask if you want to override
+		"""
+		# Ask the question
+		answer = prompt({
+			"type": "confirm",
+			"message": "Do you want to override?",
+			"name": "override",
+			"default": default
+		})
+
+		# Check if there is an answer
+		if answer == {}:
+			sys.exit()
+
+		return answer['override']
