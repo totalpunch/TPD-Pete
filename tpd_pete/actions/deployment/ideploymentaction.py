@@ -4,7 +4,7 @@ import sys
 import tempfile
 from enum import Enum
 
-from .iaction import IAction
+from ..iaction import IAction
 
 
 class EnvironmentEnum(Enum):
@@ -55,7 +55,7 @@ class IDeploymentAction(IAction):
 		# Check Python 'poetry.lock'
 		if os.path.exists("poetry.lock") is True:
 			subprocess.check_call("poetry install", shell=True)
-			os.environ["VIRTUAL_ENV"] = os.system("poetry env info -p").read().strip()
+			os.environ["VIRTUAL_ENV"] = os.popen("poetry env info -p").read().strip()
 
 		# Check Python virtualenv
 		if os.getenv("VIRTUAL_ENV") is not None:

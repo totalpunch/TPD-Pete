@@ -9,8 +9,8 @@ from halo import Halo
 from PyInquirer import prompt
 from termcolor import cprint as print
 
-from ..tools.configuration import ConfigurationTool, ConfigKey, ConfigType
-from ..tools.template import TemplateTool
+from ...tools.configuration import ConfigurationTool, ConfigKey, ConfigType
+from ...tools.template import TemplateTool
 from .ideploymentaction import IDeploymentAction, EnvironmentEnum
 
 

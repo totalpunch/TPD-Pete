@@ -26,7 +26,7 @@ class IAction(object):
 			"name": "profile",
 			"choices": profiles,
 			"message": "Which profile do you want to use?",
-			"default": default
+			"default": default if default is not None else ""
 		})
 
 		# Check if there is an answer
@@ -53,7 +53,7 @@ class IAction(object):
 			"name": "bucket",
 			"choices": buckets,
 			"message": "Which bucket do you want to use?",
-			"default": default
+			"default": default if default is not None else ""
 		})
 
 		# Check if there is an answer
@@ -70,7 +70,7 @@ class IAction(object):
 			"type": "input",
 			"name": "name",
 			"message": "What name do you want to use?",
-			"default": default
+			"default": default if default is not None else ""
 		})
 
 		# Check if there is an answer
@@ -106,7 +106,7 @@ class IAction(object):
 			"type": "input",
 			"name": "region",
 			"message": "What region do you want to use?",
-			"default": default
+			"default": default if default is not None else ""
 		})
 
 		# Check if there is an answer
@@ -123,7 +123,7 @@ class IAction(object):
 			"type": "confirm",
 			"message": "Do you want to override?",
 			"name": "override",
-			"default": default
+			"default": default if default is not None else ""
 		})
 
 		# Check if there is an answer
