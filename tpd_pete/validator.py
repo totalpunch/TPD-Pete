@@ -14,16 +14,6 @@ class Validator(object):
 		pass
 
 	@classmethod
-	def hasAWSCli(cls):
-		""" Check if AWS cli is available
-		"""
-		try:
-			subprocess.check_call(["aws", "help"], shell=True)
-		except Exception:
-			return False
-		return True
-
-	@classmethod
 	def hasPeteSetup(cls):
 		""" Check if pete configure has been run
 		"""

@@ -1,4 +1,4 @@
-
+import datetime
 import json
 import os
 import subprocess
@@ -11,6 +11,7 @@ from termcolor import cprint as print
 
 from ...tools.configuration import ConfigurationTool, ConfigKey, ConfigType
 from ...tools.template import TemplateTool
+from ...tools.boto import BotoTool
 from .ideploymentaction import IDeploymentAction, EnvironmentEnum
 
 
@@ -146,15 +147,8 @@ class CloudFormationDeployment(IDeploymentAction):
 		# Build the full bucket string
 		bucketFullFileName = "s3://%s/%s" % (bucketName, fullFileName)
 
-		# Opbouwen van het commando
-		command = "cd %s && " % self.location
-		command = command + "aws s3 cp %s %s " % (zipName, bucketFullFileName)
-		command = command + "--profile %s " % (profileName)
-		if region is not None:
-			command = command + "--region %s " % (region)
-
 		# Upload the file
-		subprocess.check_call(command, shell=True)
+		BotoTool.uploadToS3(zipName, bucketName, fullFileName, region=region, profile=profileName)
 
 		return fullFileName
 
@@ -221,32 +215,88 @@ class CloudFormationDeployment(IDeploymentAction):
 		region = self._getDeploymentRegion()
 		stackName = ConfigurationTool.getConfig(ConfigKey.STACK_NAME)
 
-		# Create the command
-		command = "cd %s && " % self.location
-		command = command + "aws cloudformation deploy "
-		command = command + "--s3-bucket %s " % (deploymentBucket)
-		command = command + "--template-file .deployment.template.json "
-		command = command + "--stack-name %s " % (stackName)
-		command = command + "--profile %s " % (profileName)
-		if region is not None:
-			command = command + "--region %s " % (region)
-		command = command + "--capabilities CAPABILITY_IAM "
-		command = command + "--parameter-overrides "
-		command = command + "deploymentBucket=\"%s\" " % (deploymentBucket)
-		command = command + "s3FileName=\"%s\" " % (s3Location)
+		# Get the boto client
+		client = BotoTool._getClient("cloudformation", region=region, profile=profileName)
 
-		# Walk trought the parameters
-		for key, value in parameters.items():
-			command = command + """%s="%s" """ % (key, value)
-
-		print(command)
-
-		# Run the command
+		# Check if the stack exists
+		stackExists = False
 		try:
-			subprocess.check_call(command, shell=True)
+			stacks = client.describe_stacks(StackName=stackName)
 		except Exception:
-			return False
-		return True
+			# There are currently no stacks in CloudFormation
+			pass
+		else:
+			# The stack exists
+			stackExists = True
+
+		# Upload the file to S3
+		templatePath = os.path.join(self.location, ".deployment.template.json")
+		templateName = "%s\\template-%s.json" % (stackName, str(datetime.datetime.now()))
+		templateUrl = BotoTool.uploadToS3(templatePath, deploymentBucket, templateName)
+
+		# Create a change set name
+		changeStackName = "%s_%s" % (stackName, str(datetime.datetime.now()))
+
+		# Create the change set parameters
+		changeStackParameters = [
+			{"ParameterKey": "deploymentBucket", "ParameterValue": deploymentBucket}, 
+			{"ParameterKey": "s3FileName", "ParameterValue": s3Location}
+		]
+
+		# Add extra parameters
+		for key, value in parameters.items():
+			changeStackParameters.append({"ParameterKey": key, "ParameterValue": value})
+
+		# Check if the stack exists
+		if stackExists is False:
+			# Create the stack
+			result = client.create_stack(
+				StackName=stackName,
+				TemplateURL=templateUrl,
+				Parameters=changeStackParameters,
+				Capabilities="CAPABILITY_IAM",
+				Tags=[
+					{"Key": "Stack", "Value": stackName},
+				]
+			)
+
+		else:
+			# Create a change set
+			result = client.create_stack_set(
+				StackSetName=changeStackName,
+				TemplateURL=templateUrl,
+				Parameters=changeStackParameters,
+				Capabilities="CAPABILITY_IAM",
+				Tags=[
+					{"Key": "Stack", "Value": stackName},
+				]
+			)
+
+			# Apply the change set
+			result = client.execute_change_set(
+				ChangeSetName=changeStackName,
+				StackName=stackName
+			)
+
+		# Wait for the results
+		while True:
+			# Get the stack
+			stack = client.describe_stacks(StackName=stackName)
+			
+			# Try to get the status
+			try:
+				stackStatus = stack["Stacks"][0]["StackStatus"]
+			except Exception:
+				stackStatus = "CREATE_IN_PROGRESS"
+			
+			# Check the status
+			if stackStatus[-9:] == "_COMPLETE":
+				return True
+			elif stackStatus[-7:] == "_FAILED":
+				return False
+
+			# Wait a little
+			time.sleep(15)
 
 	def _checkParameters(self, parameters):
 		""" Check if there are other parameters we need information about

@@ -26,7 +26,7 @@ setup(
 		]
 	},
 	install_requires=[
-		"awscli==1.18.31",
+		"boto3==1.16.22",
 		"pyinquirer==1.0.3",
 		"halo==0.0.29",
 		"termcolor==1.1.0",
