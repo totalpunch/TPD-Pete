@@ -6,11 +6,11 @@ authors = ["Martijn Wiekens <info@martijnwiekens.nl>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-awscli = "1.18.31"
 pyinquirer = "1.0.3"
 halo = "0.0.29"
 termcolor = "1.1.0"
 cfn_flip = "^1.2.2"
+boto3 = "^1.16.22"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.7.9"
