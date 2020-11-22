@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 from .tools.configuration import ConfigurationTool
 
@@ -12,16 +11,6 @@ class Validator(object):
 			Returns path to template
 		"""
 		pass
-
-	@classmethod
-	def hasAWSCli(cls):
-		""" Check if AWS cli is available
-		"""
-		try:
-			subprocess.check_call(["aws", "help"], shell=True)
-		except Exception:
-			return False
-		return True
 
 	@classmethod
 	def hasPeteSetup(cls):

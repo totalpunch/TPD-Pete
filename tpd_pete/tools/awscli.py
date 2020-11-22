@@ -1,4 +1,5 @@
 import subprocess
+from .boto import BotoTool
 
 
 class AWSCliTool(object):
@@ -6,6 +7,11 @@ class AWSCliTool(object):
 	def getRegion(cls, profile):
 		""" Get AWS region of a profile
 		"""
+		# Check if the AWS Cli is available
+		if cls.hasAWSCli() is False:
+			# Use boto3
+			return BotoTool.getRegion(profile)
+
 		# Open the AWS configuration
 		command = "cat ~/.aws/config"
 
@@ -48,6 +54,11 @@ class AWSCliTool(object):
 	def getProfiles(cls):
 		""" Get all AWS profiles
 		"""
+		# Check if the AWS Cli is available
+		if cls.hasAWSCli() is False:
+			# Use boto3
+			return BotoTool.getProfiles()
+
 		# Build the command
 		command = "cat ~/.aws/credentials | grep -o '\[[^]]*\]'"
 
@@ -67,6 +78,11 @@ class AWSCliTool(object):
 	def getS3Buckets(cls, profile=None):
 		""" Get your S3 bucket
 		"""
+		# Check if the AWS Cli is available
+		if cls.hasAWSCli() is False:
+			# Use boto3
+			return BotoTool.getS3Buckets(profile)
+
 		# Build the command
 		command = "aws s3 ls"
 
@@ -85,3 +101,18 @@ class AWSCliTool(object):
 		output = (result.stdout).decode()
 
 		return [(line[19:]).strip() for line in output.split("\n")]
+
+	@classmethod
+	def hasAWSCli(cls):
+		""" Check if the AWS Cli is available
+		"""
+		# Build the command
+		command = "aws help"
+
+		# Request the config from AWS Cli
+		result = subprocess.run(command, shell=True, capture_output=True)
+
+		# Check the response
+		if result.returncode != 0:
+			return False
+		return True

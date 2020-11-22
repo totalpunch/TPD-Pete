@@ -1,6 +1,6 @@
 from .actions.configure import ConfigureAction
 from .actions.create_project import CreateProjectAction
-from .actions.deployment import DeploymentAction
+from .actions.deploymentaction import DeploymentAction
 from .actions.localoverride import SetupLocalOverrideAction
 
 
