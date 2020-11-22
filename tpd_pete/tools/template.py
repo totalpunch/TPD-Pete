@@ -27,7 +27,15 @@ class TemplateTool(object):
 		"AWS::Events::Rule",
 		"AWS::IAM::Role",
 		"AWS::Lambda::Permission",
-		"AWS::SSM::Parameter"
+		"AWS::SSM::Parameter",
+		"AWS::EC2::LaunchTemplate",
+		"AWS::AutoScaling::AutoScalingGroup",
+		"AWS::EC2::EIPAssociation",
+		"AWS::EC2::SubnetRouteTableAssociation",
+		"AWS::EC2::VPCGatewayAttachment",
+		"AWS::EC2::Route",
+		"AWS::IAM::InstanceProfile",
+		"AWS::ApplicationAutoScaling::ScalableTarget"
 	]
 
 	@classmethod
