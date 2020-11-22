@@ -252,7 +252,7 @@ class CloudFormationDeployment(IDeploymentAction):
 
 		# Upload the file to S3
 		templatePath = os.path.join(self.location, ".deployment.template.json")
-		templateName = "%s\\template-%s.json" % (stackName, str(datetime.datetime.now()))
+		templateName = "%s/template-%s.json" % (stackName.lower(), str(time.time()))
 		templateUrl = BotoTool.uploadToS3(
 			fromPath=templatePath, 
 			toBucket=deploymentBucket, 
@@ -262,7 +262,7 @@ class CloudFormationDeployment(IDeploymentAction):
 		)
 
 		# Create a change set name
-		changeStackName = "%s_%s" % (stackName, str(datetime.datetime.now()))
+		changeStackName = "%s_%s" % (stackName, str(time.time()))
 
 		# Create the change set parameters
 		changeStackParameters = [
@@ -272,7 +272,7 @@ class CloudFormationDeployment(IDeploymentAction):
 
 		# Add extra parameters
 		for key, value in parameters.items():
-			changeStackParameters.append({"ParameterKey": key, "ParameterValue": value})
+			changeStackParameters.append({"ParameterKey": key, "ParameterValue": str(value)})
 
 		# Check if the stack exists
 		if stackExists is False:
@@ -281,7 +281,7 @@ class CloudFormationDeployment(IDeploymentAction):
 				StackName=stackName,
 				TemplateURL=templateUrl,
 				Parameters=changeStackParameters,
-				Capabilities="CAPABILITY_IAM",
+				Capabilities=["CAPABILITY_IAM"],
 				Tags=[
 					{"Key": "Stack", "Value": stackName},
 				]
@@ -293,7 +293,7 @@ class CloudFormationDeployment(IDeploymentAction):
 				StackSetName=changeStackName,
 				TemplateURL=templateUrl,
 				Parameters=changeStackParameters,
-				Capabilities="CAPABILITY_IAM",
+				Capabilities=["CAPABILITY_IAM"],
 				Tags=[
 					{"Key": "Stack", "Value": stackName},
 				]
