@@ -284,7 +284,7 @@ class CloudFormationDeployment(IDeploymentAction):
 
 		else:
 			# Create a change set
-			result = client.create_change_set(
+			client.create_change_set(
 				StackName=stackName,
 				ChangeSetName=changeStackName,
 				TemplateURL=templateUrl,
