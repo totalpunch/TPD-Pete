@@ -252,7 +252,7 @@ class CloudFormationDeployment(IDeploymentAction):
 
 		# Upload the file to S3
 		templatePath = os.path.join(self.location, ".deployment.template.json")
-		templateName = "%s/template-%s.json" % (stackName.lower(), str(time.time()))
+		templateName = "%s/template-%s.json" % (stackName.lower(), str(int(time.time())))
 		templateUrl = BotoTool.uploadToS3(
 			fromPath=templatePath, 
 			toBucket=deploymentBucket, 
@@ -262,7 +262,7 @@ class CloudFormationDeployment(IDeploymentAction):
 		)
 
 		# Create a change set name
-		changeStackName = "%s_%s" % (stackName, str(time.time()))
+		changeStackName = "%s%s" % (stackName, str(int(time.time())))
 
 		# Create the change set parameters
 		changeStackParameters = [
@@ -289,8 +289,9 @@ class CloudFormationDeployment(IDeploymentAction):
 
 		else:
 			# Create a change set
-			result = client.create_stack_set(
-				StackSetName=changeStackName,
+			result = client.create_change_set(
+				StackName=stackName,
+				ChangeSetName=changeStackName,
 				TemplateURL=templateUrl,
 				Parameters=changeStackParameters,
 				Capabilities=["CAPABILITY_IAM"],
@@ -298,6 +299,26 @@ class CloudFormationDeployment(IDeploymentAction):
 					{"Key": "Stack", "Value": stackName},
 				]
 			)
+
+			# Wait for the results
+			while True:
+				# Get the change set
+				changeSet = client.describe_change_set(StackName=stackName, ChangeSetName=changeStackName)
+				
+				# Try to get the status
+				try:
+					stackStatus = changeSet["Status"]
+				except Exception:
+					stackStatus = "CREATE_IN_PROGRESS"
+				
+				# Check the status
+				if stackStatus[-9:] == "_COMPLETE":
+					break
+				elif stackStatus[-7:] == "_FAILED":
+					return False
+
+				# Wait a little
+				time.sleep(15)
 
 			# Apply the change set
 			result = client.execute_change_set(
