@@ -59,4 +59,9 @@ class BotoTool(object):
 	def _getClient(cls, resourceType, region, profile=None):
 		""" Get a Boto3 client
 		"""
-		return boto3.client(resourceType, profile_name=profile, region_name=region)
+		# Check if the profile name is set
+		if profile is not None and profile != "default":
+			# Add the profile name to environment variables
+			os.environ["AWS_PROFILE"] = profile
+
+		return boto3.client(resourceType, region_name=region)
