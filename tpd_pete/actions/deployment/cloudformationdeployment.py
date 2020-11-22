@@ -272,7 +272,7 @@ class CloudFormationDeployment(IDeploymentAction):
 		# Check if the stack exists
 		if stackExists is False:
 			# Create the stack
-			result = client.create_stack(
+			client.create_stack(
 				StackName=stackName,
 				TemplateURL=templateUrl,
 				Parameters=changeStackParameters,
