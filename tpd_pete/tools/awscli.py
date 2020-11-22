@@ -1,6 +1,7 @@
 import subprocess
 from .boto import BotoTool
 
+
 class AWSCliTool(object):
 	@classmethod
 	def getRegion(cls, profile):

@@ -1,7 +1,5 @@
-import datetime
 import json
 import os
-import subprocess
 import sys
 import time
 import zipfile
@@ -132,7 +130,7 @@ class CloudFormationDeployment(IDeploymentAction):
 					if ignoredFolderName in root:
 						goToNext = True
 						break
-				
+
 				# Check if we found a ignored folder
 				if goToNext is True:
 					continue
@@ -159,15 +157,12 @@ class CloudFormationDeployment(IDeploymentAction):
 		profileName = self._getDeploymentProfile()
 		region = self._getDeploymentRegion()
 
-		# Build the full bucket string
-		bucketFullFileName = "s3://%s/%s" % (bucketName, fullFileName)
-
 		# Upload the file
 		BotoTool.uploadToS3(
-			fromPath=os.path.join(self.location, zipName), 
-			toBucket=bucketName, 
-			toKey=fullFileName, 
-			region=region, 
+			fromPath=os.path.join(self.location, zipName),
+			toBucket=bucketName,
+			toKey=fullFileName,
+			region=region,
 			profile=profileName
 		)
 
@@ -242,7 +237,7 @@ class CloudFormationDeployment(IDeploymentAction):
 		# Check if the stack exists
 		stackExists = False
 		try:
-			stacks = client.describe_stacks(StackName=stackName)
+			client.describe_stacks(StackName=stackName)
 		except Exception:
 			# There are currently no stacks in CloudFormation
 			pass
@@ -254,8 +249,8 @@ class CloudFormationDeployment(IDeploymentAction):
 		templatePath = os.path.join(self.location, ".deployment.template.json")
 		templateName = "%s/template-%s.json" % (stackName.lower(), str(int(time.time())))
 		templateUrl = BotoTool.uploadToS3(
-			fromPath=templatePath, 
-			toBucket=deploymentBucket, 
+			fromPath=templatePath,
+			toBucket=deploymentBucket,
 			toKey=templateName,
 			region=region,
 			profile=profileName
@@ -266,7 +261,7 @@ class CloudFormationDeployment(IDeploymentAction):
 
 		# Create the change set parameters
 		changeStackParameters = [
-			{"ParameterKey": "deploymentBucket", "ParameterValue": deploymentBucket}, 
+			{"ParameterKey": "deploymentBucket", "ParameterValue": deploymentBucket},
 			{"ParameterKey": "s3FileName", "ParameterValue": s3Location}
 		]
 
@@ -304,13 +299,13 @@ class CloudFormationDeployment(IDeploymentAction):
 			while True:
 				# Get the change set
 				changeSet = client.describe_change_set(StackName=stackName, ChangeSetName=changeStackName)
-				
+
 				# Try to get the status
 				try:
 					stackStatus = changeSet["Status"]
 				except Exception:
 					stackStatus = "CREATE_IN_PROGRESS"
-				
+
 				# Check the status
 				if stackStatus[-9:] == "_COMPLETE":
 					break
@@ -321,7 +316,7 @@ class CloudFormationDeployment(IDeploymentAction):
 				time.sleep(15)
 
 			# Apply the change set
-			result = client.execute_change_set(
+			client.execute_change_set(
 				ChangeSetName=changeStackName,
 				StackName=stackName
 			)
@@ -330,13 +325,13 @@ class CloudFormationDeployment(IDeploymentAction):
 		while True:
 			# Get the stack
 			stack = client.describe_stacks(StackName=stackName)
-			
+
 			# Try to get the status
 			try:
 				stackStatus = stack["Stacks"][0]["StackStatus"]
 			except Exception:
 				stackStatus = "CREATE_IN_PROGRESS"
-			
+
 			# Check the status
 			if stackStatus[-9:] == "_COMPLETE":
 				return True

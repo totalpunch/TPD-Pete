@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 from .tools.configuration import ConfigurationTool
 

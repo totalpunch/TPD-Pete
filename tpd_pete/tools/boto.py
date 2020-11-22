@@ -1,6 +1,7 @@
 import os
 import boto3
 
+
 class BotoTool(object):
 	@classmethod
 	def getRegions(cls):
@@ -20,7 +21,7 @@ class BotoTool(object):
 		# Check if there is an environment var
 		if "AWS_DEFAULT_REGION" not in os.environ:
 			raise Exception("Could not find a default region, please specify environment variable AWS_DEFAULT_REGION")
-			
+
 		return os.environ["AWS_DEFAULT_REGION"]
 
 	@classmethod
@@ -52,7 +53,7 @@ class BotoTool(object):
 		client = cls._getClient("s3", region=region, profile=profile)
 
 		# Upload the file
-		result = client.upload_file(fromPath, toBucket, toKey)
+		client.upload_file(fromPath, toBucket, toKey)
 		return "https://%s.s3.%s.amazonaws.com/%s" % (toBucket, region, toKey)
 
 	@classmethod
