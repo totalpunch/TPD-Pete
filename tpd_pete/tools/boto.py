@@ -53,7 +53,7 @@ class BotoTool(object):
 
 		# Upload the file
 		result = client.upload_file(fromPath, toBucket, toKey)
-		return "s3:\\\\%s\\%s" % (toBucket, toKey)
+		return "https://%s.s3.%s.amazonaws.com/%s" % (toBucket, region, toKey)
 
 	@classmethod
 	def _getClient(cls, resourceType, region, profile=None):
