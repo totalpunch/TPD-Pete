@@ -22,13 +22,19 @@ class DeploymentAction(IAction):
 	def start(self, **kwargs):
 		""" Start the deployment
 		"""
+		# Remember if we found a deployment option
+		found = False
+
 		# Check if there is an template
 		if os.path.exists("template.yaml") is True:
 			CloudFormationDeployment().start(**kwargs)
+			found = True
 
 		# Check if there is an amplify folder
-		elif os.path.exists("amplify") is True:
+		if os.path.exists("amplify") is True:
 			AmplifyDeployment().start(**kwargs)
+			found = True
 
-		else:
+		# Check if we found a deployment option
+		if found is False:
 			raise Exception("Cant find CloudFormation template: 'template.yaml'")
