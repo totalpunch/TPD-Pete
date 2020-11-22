@@ -120,10 +120,10 @@ class CloudFormationDeployment(IDeploymentAction):
 		ignoredFolders = [".git", ".svn", ".pete", ".vscode", "seeders"]
 
 		# Create a filename
-		fileName = "pete_%s.zip" % int(time.time())
+		zipFileName = "pete_%s.zip" % int(time.time())
 
 		# Create the zip file
-		with zipfile.ZipFile(os.path.join(self.location, fileName), "w", zipfile.ZIP_DEFLATED) as zipFile:
+		with zipfile.ZipFile(os.path.join(self.location, zipFileName), "w", zipfile.ZIP_DEFLATED) as zipFile:
 			# Walk through all the files
 			for root, dirs, files in os.walk("."):
 				# Check the ignored folders
@@ -146,7 +146,7 @@ class CloudFormationDeployment(IDeploymentAction):
 					# Add them to the zip file
 					zipFile.write(os.path.join(root, fileName))
 
-		return fileName
+		return zipFileName
 
 	def _uploadToS3(self, zipName):
 		""" Upload the zip file to S3
@@ -163,7 +163,13 @@ class CloudFormationDeployment(IDeploymentAction):
 		bucketFullFileName = "s3://%s/%s" % (bucketName, fullFileName)
 
 		# Upload the file
-		BotoTool.uploadToS3(zipName, bucketName, fullFileName, region=region, profile=profileName)
+		BotoTool.uploadToS3(
+			fromPath=os.path.join(self.location, zipName), 
+			toBucket=bucketName, 
+			toKey=fullFileName, 
+			region=region, 
+			profile=profileName
+		)
 
 		return fullFileName
 
@@ -247,7 +253,13 @@ class CloudFormationDeployment(IDeploymentAction):
 		# Upload the file to S3
 		templatePath = os.path.join(self.location, ".deployment.template.json")
 		templateName = "%s\\template-%s.json" % (stackName, str(datetime.datetime.now()))
-		templateUrl = BotoTool.uploadToS3(templatePath, deploymentBucket, templateName)
+		templateUrl = BotoTool.uploadToS3(
+			fromPath=templatePath, 
+			toBucket=deploymentBucket, 
+			toKey=templateName,
+			region=region,
+			profile=profileName
+		)
 
 		# Create a change set name
 		changeStackName = "%s_%s" % (stackName, str(datetime.datetime.now()))
