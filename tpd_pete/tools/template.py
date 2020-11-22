@@ -78,12 +78,24 @@ class TemplateTool(object):
 
 				# Change the mentioned thing
 				else:
+					# Check if properties exists
+					if "Properties" not in templateContent['Resources'][itemName]:
+						templateContent['Resources'][itemName]['Properties'] = {}
+
+					# Change the name
 					templateContent['Resources'][itemName]['Properties'][cls.DEV_SUFFIX_TYPES[itemType]] = templateContent['Resources'][itemName]['Properties'][cls.DEV_SUFFIX_TYPES[itemType]] + "_DEV"
 
 			# Just try it
 			else:
+				# Check if properties exists
+				if "Properties" not in templateContent['Resources'][itemName]:
+						templateContent['Resources'][itemName]['Properties'] = {}
+
+				# Check if name exists
 				if "Name" in templateContent['Resources'][itemName]['Properties']:
 					templateContent['Resources'][itemName]['Properties']['Name'] = templateContent['Resources'][itemName]['Properties']['Name'] + "_DEV"
+
+				# Check if ID exists
 				elif "Id" in templateContent['Resources'][itemName]['Properties']:
 					templateContent['Resources'][itemName]['Properties']['Id'] = templateContent['Resources'][itemName]['Properties']['Id'] + "_DEV"
 				else:
@@ -103,6 +115,10 @@ class TemplateTool(object):
 			# Check if we should add the tags
 			if itemType in cls.NO_TYPE_TAGS_SUPPORT:
 				continue
+
+			# Check if properties exists
+			if "Properties" not in templateContent['Resources'][itemName]:
+				templateContent['Resources'][itemName]['Properties'] = {}
 
 			# Check if tags already exists
 			if "Tags" not in templateContent['Resources'][itemName]['Properties']:
