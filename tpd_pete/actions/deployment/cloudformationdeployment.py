@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import time
+import zipfile
 
 from halo import Halo
 from PyInquirer import prompt
@@ -115,21 +116,35 @@ class CloudFormationDeployment(IDeploymentAction):
 
 			Returns the zip filename
 		"""
+		# Create a list of ignored folders
+		ignoredFolders = [".git", ".svn", ".pete", ".vscode", "seeders"]
+
 		# Create a filename
 		fileName = "pete_%s.zip" % int(time.time())
 
-		# Build the command
-		command = "cd %s && " % self.location
-		command = command + "zip -r %s %s " % (fileName, ".")
-		command = command + """-x ".git" """
-		command = command + """-x ".svn" """
-		command = command + """-x ".pete" """
-		command = command + """-x ".vscode" """
-		command = command + """-x "*.zip" """
-		command = command + """-x "seeders/" """
-		command = command + """-x ".*" """
+		# Create the zip file
+		with zipfile.ZipFile(os.path.join(self.location, fileName), "w", zipfile.ZIP_DEFLATED) as zipFile:
+			# Walk through all the files
+			for root, dirs, files in os.walk("."):
+				# Check the ignored folders
+				goToNext = False
+				for ignoredFolderName in ignoredFolders:
+					if ignoredFolderName in root:
+						goToNext = True
+						break
+				
+				# Check if we found a ignored folder
+				if goToNext is True:
+					continue
 
-		subprocess.check_call(command, shell=True)
+				# Walk throught the files of the directory
+				for fileName in files:
+					# Check if this is an zip
+					if ".zip" in fileName:
+						continue
+
+					# Add them to the zip file
+					zipFile.write(os.path.join(root, fileName))
 
 		return fileName
 
