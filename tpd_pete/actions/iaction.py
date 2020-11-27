@@ -131,3 +131,20 @@ class IAction(object):
 			sys.exit()
 
 		return answer['override']
+
+	def _askConfirm(self, message, default=False):
+		""" Ask if you want to confirm
+		"""
+		# Ask the question
+		answer = prompt({
+			"type": "confirm",
+			"message": message,
+			"name": "confirm",
+			"default": default if default is not None else ""
+		})
+
+		# Check if there is an answer
+		if answer == {}:
+			sys.exit()
+
+		return answer['confirm']
