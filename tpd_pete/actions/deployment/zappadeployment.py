@@ -1,18 +1,10 @@
-import json
 import os
 import subprocess
-import sys
-import time
-import zipfile
 
 from halo import Halo
-from PyInquirer import prompt
 from termcolor import cprint as print
 
-from ...tools.configuration import ConfigurationTool, ConfigKey, ConfigType
-from ...tools.template import TemplateTool
-from ...tools.boto import BotoTool
-from .ideploymentaction import IDeploymentAction, EnvironmentEnum
+from .ideploymentaction import IDeploymentAction
 
 
 class ZappaDeployment(IDeploymentAction):
@@ -62,13 +54,13 @@ class ZappaDeployment(IDeploymentAction):
 
 			# Run the deployment command
 			try:
-				result = subprocess.check_output("cd %s && %s deploy %s" % (self.location, zappaCommand, stageName), stderr=subprocess.STDOUT, shell=True)
+				subprocess.check_output("cd %s && %s deploy %s" % (self.location, zappaCommand, stageName), stderr=subprocess.STDOUT, shell=True)
 			except subprocess.CalledProcessError as e:
 				# Check if it was already deployed
 				if b"did you mean to call update" in e.output:
 					# Run the update command
 					try:
-						result = subprocess.check_output("cd %s && %s update %s" % (self.location, zappaCommand, stageName), stderr=subprocess.STDOUT, shell=True)
+						subprocess.check_output("cd %s && %s update %s" % (self.location, zappaCommand, stageName), stderr=subprocess.STDOUT, shell=True)
 					except subprocess.CalledProcessError as e:
 						print(e.output, "red")
 						return False
@@ -98,4 +90,3 @@ class ZappaDeployment(IDeploymentAction):
 				return "poetry run zappa"
 
 		return None
-
