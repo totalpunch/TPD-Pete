@@ -5,6 +5,7 @@ from termcolor import cprint as print
 from .iaction import IAction
 from .deployment.cloudformationdeployment import CloudFormationDeployment
 from .deployment.amplifydeployment import AmplifyDeployment
+from .deployment.zappadeployment import ZappaDeployment
 from .deployment.ideploymentaction import EnvironmentEnum
 
 
@@ -37,6 +38,12 @@ class DeploymentAction(IAction):
 		if os.path.exists("amplify") is True:
 			print("Starting Amplify deployment", "blue")
 			AmplifyDeployment().start(**kwargs)
+			found = True
+
+		# Check if there is an zappa folder
+		if os.path.exists("zappa_settings.json") is True:
+			print("Starting Zappa deployment", "blue")
+			ZappaDeployment().start(**kwargs)
 			found = True
 
 		# Check if we found a deployment option
