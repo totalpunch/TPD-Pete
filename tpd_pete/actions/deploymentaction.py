@@ -5,6 +5,7 @@ from termcolor import cprint as print
 from .iaction import IAction
 from .deployment.cloudformationdeployment import CloudFormationDeployment
 from .deployment.amplifydeployment import AmplifyDeployment
+from .deployment.hookdeployment import HookDeployment
 from .deployment.zappadeployment import ZappaDeployment
 from .deployment.ideploymentaction import EnvironmentEnum
 
@@ -49,6 +50,14 @@ class DeploymentAction(IAction):
 		if os.path.exists("zappa_settings.json") is True:
 			print("Starting Zappa deployment", "blue")
 			result = ZappaDeployment().start(**kwargs)
+			if result is False:
+				error = True
+			found = True
+
+		# Check if there are any custom hooks
+		if os.path.exists(".pete/hooks") is True:
+			print("Starting Custom hooks deployment", "blue")
+			result = HookDeployment().start(**kwargs)
 			if result is False:
 				error = True
 			found = True
