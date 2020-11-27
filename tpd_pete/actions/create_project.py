@@ -224,7 +224,10 @@ class CreateProjectAction(IAction):
 
 		# Check if there is on template.yaml
 		if os.path.exists("template.yaml") is False:
-			self._createCloudFormationTemplateFile()
+			# Ask if we should create a CloudFormation template
+			if self._askConfirm("Do you want to create a CloudFormation template?") is True:
+				# Create an empty CloudFormation template
+				self._createCloudFormationTemplateFile()
 
 		# Everything is done
 		print("All done! You can now use pete deploy in this project. Want to change some details? Just run init again.", "yellow")

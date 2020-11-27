@@ -44,7 +44,7 @@ class CloudFormationDeployment(IDeploymentAction):
 			except Exception as e:
 				spinner.fail()
 				print(e, "red")
-				sys.exit()
+				return False
 			else:
 				spinner.succeed()
 

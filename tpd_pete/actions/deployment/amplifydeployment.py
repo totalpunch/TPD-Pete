@@ -28,6 +28,7 @@ class AmplifyDeployment(IDeploymentAction):
 				spinner.succeed()
 			else:
 				spinner.fail()
+			return status
 
 	def _amplifyDeploy(self):
 		""" Deploy with AWS Amplify
