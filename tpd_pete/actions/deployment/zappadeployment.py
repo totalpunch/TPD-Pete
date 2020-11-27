@@ -4,6 +4,7 @@ import subprocess
 from halo import Halo
 from termcolor import cprint as print
 
+from ...tools.configuration import ConfigurationTool
 from .ideploymentaction import IDeploymentAction
 
 
