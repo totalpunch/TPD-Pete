@@ -1,4 +1,6 @@
 import os
+import sys
+from termcolor import cprint as print
 
 from .iaction import IAction
 from .deployment.cloudformationdeployment import CloudFormationDeployment
@@ -27,14 +29,17 @@ class DeploymentAction(IAction):
 
 		# Check if there is an template
 		if os.path.exists("template.yaml") is True:
+			print("Starting CloudFormation deployment", "blue")
 			CloudFormationDeployment().start(**kwargs)
 			found = True
 
 		# Check if there is an amplify folder
 		if os.path.exists("amplify") is True:
+			print("Starting Amplify deployment", "blue")
 			AmplifyDeployment().start(**kwargs)
 			found = True
 
 		# Check if we found a deployment option
 		if found is False:
-			raise Exception("Cant find CloudFormation template: 'template.yaml'")
+			print("Could not find any supported deployment methodes. Use Amplify, CloudFormation or Zappa", "red")
+			sys.exit(1)
