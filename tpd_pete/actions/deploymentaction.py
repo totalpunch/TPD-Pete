@@ -27,26 +27,38 @@ class DeploymentAction(IAction):
 		"""
 		# Remember if we found a deployment option
 		found = False
+		error = False
 
 		# Check if there is an template
 		if os.path.exists("template.yaml") is True:
 			print("Starting CloudFormation deployment", "blue")
-			CloudFormationDeployment().start(**kwargs)
+			result = CloudFormationDeployment().start(**kwargs)
+			if result is False:
+				error = True
 			found = True
 
 		# Check if there is an amplify folder
 		if os.path.exists("amplify") is True:
 			print("Starting Amplify deployment", "blue")
-			AmplifyDeployment().start(**kwargs)
+			result = AmplifyDeployment().start(**kwargs)
+			if result is False:
+				error = True
 			found = True
 
 		# Check if there is an zappa folder
 		if os.path.exists("zappa_settings.json") is True:
 			print("Starting Zappa deployment", "blue")
-			ZappaDeployment().start(**kwargs)
+			result = ZappaDeployment().start(**kwargs)
+			if result is False:
+				error = True
 			found = True
 
 		# Check if we found a deployment option
 		if found is False:
 			print("Could not find any supported deployment methodes. Use Amplify, CloudFormation or Zappa", "red")
+			sys.exit(1)
+
+		# Check if an error occured
+		if error is True:
+			# Set the exit code
 			sys.exit(1)
