@@ -123,7 +123,7 @@ class CloudFormationDeployment(IDeploymentAction):
 		# Create the zip file
 		with zipfile.ZipFile(os.path.join(self.location, zipFileName), "w", zipfile.ZIP_DEFLATED) as zipFile:
 			# Walk through all the files
-			for root, dirs, files in os.walk("."):
+			for root, dirs, files in os.walk(self.location):
 				# Check the ignored folders
 				goToNext = False
 				for ignoredFolderName in ignoredFolders:
