@@ -142,7 +142,8 @@ class CloudFormationDeployment(IDeploymentAction):
 						continue
 
 					# Add them to the zip file
-					zipFile.write(os.path.join(root, fileName))
+					arcname = os.path.join(root, fileName)[len(self.location):]
+					zipFile.write(os.path.join(root, fileName), arcname=arcname)
 
 		return zipFileName
 
